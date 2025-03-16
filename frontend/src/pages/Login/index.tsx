@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Importação para navegação
+//import { useNavigate } from "react-router-dom"; // Importação para navegação
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-  const navigate = useNavigate(); // Hook para navegação
+  //const navigate = useNavigate(); // Hook para navegação
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
