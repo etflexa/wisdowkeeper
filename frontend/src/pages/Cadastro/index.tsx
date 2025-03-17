@@ -110,7 +110,7 @@ const Cadastro = () => {
 
       }
       alert("Cadastro realizado" );
-      window.location.href = "http://localhost:5173/dashboard";
+      window.location.href = `${import.meta.env.VITE_FRONTEND_URL}/dashboard`;
 
       
 
