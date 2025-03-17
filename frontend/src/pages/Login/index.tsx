@@ -49,7 +49,7 @@ function Login() {
           const data = await response.json();
           console.log("retornou, o token é", data.token);
           localStorage.setItem('jwt', data.token); // Armazenar token
-          window.location.href = "http://localhost:5173/dashboard";
+          window.location.href = `${import.meta.env.VITE_FRONTEND_URL}/dashboard`;
 
         } else {
           alert("usuario ou senha incorretos");
