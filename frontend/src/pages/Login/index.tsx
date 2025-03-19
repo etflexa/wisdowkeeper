@@ -39,7 +39,7 @@ function Login() {
           email: username,
           password: password
         };
-        const response = await fetch('http://localhost:3000/login', {
+        const response = await fetch('https://wisdowkeeper-novatentativa.onrender.com/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(dados),
@@ -54,7 +54,7 @@ function Login() {
         } else {
           alert("usuario ou senha incorretos");
           console.error('Login falhou');
-          window.location.href = "http://localhost:5173/login";
+          window.location.href = "https://wisdowkeeper-o6y5.vercel.app/login";
 
 
         }

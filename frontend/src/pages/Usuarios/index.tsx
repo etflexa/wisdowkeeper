@@ -32,7 +32,7 @@ const Usuarios = () => {
         async function remover(){
           const token = localStorage.getItem('jwt');
       
-          const response = await  fetch('http://localhost:3000/removeUser', {
+          const response = await  fetch('https://wisdowkeeper-novatentativa.onrender.com/removeUser', {
             
             method: 'POST',
             headers: {
@@ -47,7 +47,7 @@ const Usuarios = () => {
                        
             if (response.status === 400) {
               alert("Faça login para remover usuário" );
-              window.location.href = "http://localhost:5173";
+              window.location.href = "https://wisdowkeeper-o6y5.vercel.app/";
             } 
             if (response.status === 404) {
               alert("Usuario não encontrado" );
@@ -66,7 +66,7 @@ const Usuarios = () => {
           }
           if(response.ok){
             alert("Usuario removido" );
-            window.location.href = "http://localhost:5173/usuarios";
+            window.location.href = "https://wisdowkeeper-o6y5.vercel.app/usuarios";
             
           }
          
@@ -86,7 +86,7 @@ const Usuarios = () => {
       // Adiciona o evento de clique no botão
      
       const token = localStorage.getItem('jwt');
-      const response = await axios.get<Usuario[]>('http://localhost:3000/getUsers', {
+      const response = await axios.get<Usuario[]>('https://wisdowkeeper-novatentativa.onrender.com/getUsers', {
         headers: {
           'Authorization': `Bearer ${token}`
         }

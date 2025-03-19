@@ -84,7 +84,7 @@ const Cadastro = () => {
     if (validate()) {
       const token = localStorage.getItem('jwt');
       
-      const response = await  fetch('http://localhost:3000/cadastro', {
+      const response = await  fetch('https://wisdowkeeper-o6y5.vercel.app/cadastro', {
         
         method: 'POST',
         headers: {
@@ -102,7 +102,7 @@ const Cadastro = () => {
         } 
         if (response.status === 400) {
           alert("Faça login para cadastrar usuário" );
-          window.location.href = "http://localhost:5173";
+          window.location.href = "https://wisdowkeeper-o6y5.vercel.app/";
         } 
         
     
