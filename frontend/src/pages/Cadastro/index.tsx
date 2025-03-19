@@ -110,7 +110,7 @@ const Cadastro = () => {
 
       }
       alert("Cadastro realizado" );
-      window.location.href = `${import.meta.env.VITE_FRONTEND_URL}/dashboard`;
+      window.location.href = `https://wisdowkeeper-o6y5.vercel.app/dashboard`;
 
       
 

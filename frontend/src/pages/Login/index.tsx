@@ -49,7 +49,7 @@ function Login() {
           const data = await response.json();
           console.log("retornou, o token é", data.token);
           localStorage.setItem('jwt', data.token); // Armazenar token
-          window.location.href = `${import.meta.env.VITE_FRONTEND_URL}/dashboard`;
+          window.location.href = `https://wisdowkeeper-o6y5.vercel.app/dashboard`;
 
         } else {
           alert("usuario ou senha incorretos");
