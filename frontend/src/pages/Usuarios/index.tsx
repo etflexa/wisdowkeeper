@@ -67,7 +67,7 @@ const Usuarios = () => {
           }
           if(response.ok){
             alert("Usuario removido" );
-            window.location.href = "https://wisdowkeeper-o6y5.vercel.app/usuarios";
+            navigate('/usuarios')
             
           }
          
