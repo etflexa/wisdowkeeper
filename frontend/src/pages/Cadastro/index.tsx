@@ -86,7 +86,7 @@ const Cadastro = () => {
     if (validate()) {
       const token = localStorage.getItem('jwt');
       try{
-      const response = await  fetch('http://localhost:3000/cadastro', {
+      const response = await  fetch('https://wisdowkeeper-o6y5.vercel.app/cadastro', {
         
         method: 'POST',
         headers: {
