@@ -1,13 +1,13 @@
 import { useState } from "react";
-//import { useNavigate } from "react-router-dom"; // Importação para navegação
+import { useNavigate } from "react-router-dom"; // Importação correta
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-  //const navigate = useNavigate(); // Hook para navegação
+  const navigate = useNavigate(); // Hook para navegação
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const newErrors: { email?: string; password?: string } = {};
@@ -28,110 +28,69 @@ function Login() {
 
     setErrors(newErrors);
 
-    // Se não houver erros, redireciona para /dashboard
+    // Se não houver erros, faz login
     if (Object.keys(newErrors).length === 0) {
-      console.log("formulario corretamente preenchido!");
-      
+      try {
+        const response = await fetch('https://wisdowkeeper-novatentativa.onrender.com/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
 
-      const login = async (username: string, password: string) => {
-        const dados = { email: username, password: password };
-      
-        try {
-          const response = await fetch('https://wisdowkeeper-novatentativa.onrender.com/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dados),
-          });
-      
-          console.log("Resposta da API:", response); // Veja a resposta no console
-      
-          if (response.ok) {
-            const data = await response.json();
-            console.log("Token recebido:", data.token);
-            localStorage.setItem('jwt', data.token); // Armazenar token
-            window.location.assign('https://wisdowkeeper-o6y5.vercel.app/dashboard');
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Token recebido:", data.token);
+          localStorage.setItem('jwt', data.token); // Armazena o token
 
-          } else {
-            alert("Usuário ou senha incorretos");
-            console.error('Login falhou');
-          }
-        } catch (error) {
-          console.error("Erro na requisição:", error);
+          navigate('/dashboard'); // Redireciona para a Dashboard sem recarregar a página
+        } else {
+          alert("Usuário ou senha incorretos");
         }
-      };
-      
-
-        login(email, password);
-
-
-
-
-      //navigate("/dashboard"); // Redireciona para a rota /dashboard
+      } catch (error) {
+        console.error("Erro na requisição:", error);
+      }
     }
   };
 
   return (
     <div className="flex items-center justify-center h-screen bg-gray-100">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-sm bg-white rounded-lg shadow-md p-6"
-      >
-        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
-          Login
-        </h2>
+      <form onSubmit={handleSubmit} className="w-full max-w-sm bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Login</h2>
 
         {/* Campo de e-mail */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            E-mail
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Digite seu e-mail"
-            className={`w-full px-4 py-2 border ${
-              errors.email ? "border-red-500" : "border-gray-300"
-            } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+            className={`w-full px-4 py-2 border ${errors.email ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
           />
-          {errors.email && (
-            <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-          )}
+          {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
         </div>
 
         {/* Campo de senha */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Senha
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Digite sua senha"
-            className={`w-full px-4 py-2 border ${
-              errors.password ? "border-red-500" : "border-gray-300"
-            } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+            className={`w-full px-4 py-2 border ${errors.password ? "border-red-500" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
           />
-          {errors.password && (
-            <p className="text-red-500 text-sm mt-1">{errors.password}</p>
-          )}
+          {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
         </div>
 
         {/* Botão de login */}
-        <button
-          type="submit"
-          className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        >
+        <button type="submit" className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600">
           Entrar
         </button>
 
         {/* Link de recuperação de senha */}
         <div className="text-center mt-4">
-          <a
-            href="#"
-            className="text-sm text-blue-500 hover:underline focus:outline-none"
-          >
+          <a href="#" className="text-sm text-blue-500 hover:underline">
             Esqueceu sua senha?
           </a>
         </div>
