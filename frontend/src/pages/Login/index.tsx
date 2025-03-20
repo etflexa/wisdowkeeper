@@ -34,31 +34,31 @@ function Login() {
       
 
       const login = async (username: string, password: string) => {
-
-        const dados = {
-          email: username,
-          password: password
-        };
-        const response = await fetch('https://wisdowkeeper-novatentativa.onrender.com/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(dados),
-        });
+        const dados = { email: username, password: password };
       
-        if (response.ok) {
-          const data = await response.json();
-          console.log("retornou, o token é", data.token);
-          localStorage.setItem('jwt', data.token); // Armazenar token
-          window.location.href = `https://wisdowkeeper-o6y5.vercel.app/dashboard`;
-
-        } else {
-          alert("usuario ou senha incorretos");
-          console.error('Login falhou');
-          window.location.href = "https://wisdowkeeper-o6y5.vercel.app/login";
-
-
+        try {
+          const response = await fetch('https://wisdowkeeper-novatentativa.onrender.com/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados),
+          });
+      
+          console.log("Resposta da API:", response); // Veja a resposta no console
+      
+          if (response.ok) {
+            const data = await response.json();
+            console.log("Token recebido:", data.token);
+            localStorage.setItem('jwt', data.token); // Armazenar token
+            //window.location.href = "https://wisdowkeeper-o6y5.vercel.app/dashboard";
+          } else {
+            alert("Usuário ou senha incorretos");
+            console.error('Login falhou');
+          }
+        } catch (error) {
+          console.error("Erro na requisição:", error);
         }
       };
+      
 
         login(email, password);
 
