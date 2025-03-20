@@ -1,10 +1,14 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Importação do useNavigate
-import Sidebar from "../../components/Sidebar";
+import Sidebar from "../../components/Sidebar"
+import { useNavigate } from "react-router-dom";
 
 const Cadastro = () => {
-  const navigate = useNavigate(); // Hook para navegação
+
   const [isSidebarOpen] = useState(false);
+  
+ 
+
+
   const [formData, setFormData] = useState({
     nome: "",
     email: "",
@@ -19,10 +23,12 @@ const Cadastro = () => {
   });
 
   const [errors, setErrors] = useState({} as Record<string, string>);
+  const navigate = useNavigate(); // Hook para navegação
+
   const perfis = ["Estagiário", "Desenvolvedor", "Supervisor", "Administrador"];
 
   const validateCPF = (cpf: string) => {
-    cpf = cpf.replace(/\D/g, ""); 
+    cpf = cpf.replace(/\D/g, ""); // Remove caracteres não numéricos
     if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
 
     let soma = 0;
@@ -40,7 +46,7 @@ const Cadastro = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    setErrors({ ...errors, [e.target.name]: "" });
+    setErrors({ ...errors, [e.target.name]: "" }); // Limpa os erros ao modificar o campo
   };
 
   const validate = () => {
@@ -79,114 +85,242 @@ const Cadastro = () => {
     e.preventDefault();
     if (validate()) {
       const token = localStorage.getItem('jwt');
-
-      const response = await fetch('https://wisdowkeeper-o6y5.vercel.app/cadastro', {
+      try{
+      const response = await  fetch('http://localhost:3000/cadastro', {
+        
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+            'Content-Type': 'application/json', // Define o tipo de conteúdo como JSON
+            'Authorization': `Bearer ${token}` 
         },
-        body: JSON.stringify(formData)
-      });
-      try {
-      const responseData = await response.json();
-
+        body: JSON.stringify(formData) // Converte os dados do formulário em JSON
+    })
+    const responseData = await response.json();
+    console.error("Erro na API:", responseData);
       if (!response.ok) {
-        console.error("Erro na API:", responseData);
         if (response.status === 422) {
-          alert("O endereço de email já está sendo usado.");
+          alert("O endereço de email ja está sendo usado" );
         } 
         if (response.status === 433) {
-          alert("O CPF já está sendo utilizado, indique outro.");
+          alert("O CPF já está sendo utilizado, indique outro" );
         } 
         if (response.status === 400) {
-          alert("Faça login para cadastrar usuário.");
-          window.location.href = "https://wisdowkeeper-o6y5.vercel.app";
+          alert("Faça login para cadastrar usuário" );
+          window.location.href = "http://localhost:5173";
         } 
+        
+    
         throw new Error(`Erro: ${response.status} - ${response.statusText}`);
-      }
 
-      alert("Cadastro realizado!");
-      navigate('/dashboard'); // Redireciona para o Dashboard
+      }
+      alert("Cadastro realizado" );
+      navigate('/dashboard');
     } catch (error) {
-        console.error("Erro na requisição:", error);
-        alert("Erro ao conectar com o servidor.");
+      console.error("Erro na requisição:", error);
+      alert("Erro ao conectar com o servidor.");
     }}
   };
 
   return (
-    <div className="min-h-screen flex bg-gray-100">
+    <div className="min-h-screen flex  bg-gray-100">
+      {/* Sidebar */}
       <Sidebar isSidebarOpen={isSidebarOpen} />
+
       <div className="flex-1 flex justify-center items-center">
-        <form
-          onSubmit={handleSubmit}
-          className="bg-white shadow-lg rounded-lg p-8 w-full max-w-4xl"
-        >
-          <h1 className="text-2xl font-bold mb-6 text-center">Cadastro de Usuário</h1>
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white shadow-lg rounded-lg p-8 w-full max-w-4xl"
+      >
+        <h1 className="text-2xl font-bold mb-6 text-center">Cadastro de Usuário</h1>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="mb-4">
-              <label className="block font-medium mb-1" htmlFor="nome">Nome</label>
-              <input
-                id="nome"
-                name="nome"
-                type="text"
-                value={formData.nome}
-                onChange={handleChange}
-                className={`w-full p-3 border rounded ${errors.nome ? "border-red-500" : "border-gray-300"}`}
-              />
-              {errors.nome && <p className="text-red-500 text-sm">{errors.nome}</p>}
-            </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="mb-4">
+            <label className="block font-medium mb-1" htmlFor="nome">
+              Nome
+            </label>
+            <input
+              id="nome"
+              name="nome"
+              type="text"
+              value={formData.nome}
+              onChange={handleChange}
+              className={`w-full p-3 border rounded ${
+                errors.nome ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            
+            {errors.nome && <p className="text-red-500 text-sm">{errors.nome}</p>}
+            
+          </div>
+         
 
-            <div className="mb-4">
-              <label className="block font-medium mb-1" htmlFor="email">E-mail</label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={`w-full p-3 border rounded ${errors.email ? "border-red-500" : "border-gray-300"}`}
-              />
-              {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
-            </div>
-
-            <div className="mb-4">
-              <label className="block font-medium mb-1" htmlFor="cpf">CPF</label>
-              <input
-                id="cpf"
-                name="cpf"
-                type="text"
-                value={formData.cpf}
-                onChange={handleChange}
-                className={`w-full p-3 border rounded ${errors.cpf ? "border-red-500" : "border-gray-300"}`}
-              />
-              {errors.cpf && <p className="text-red-500 text-sm">{errors.cpf}</p>}
-            </div>
-
-            <div className="mb-4">
-              <label className="block font-medium mb-1" htmlFor="perfil">Perfil</label>
-              <select
-                id="perfil"
-                name="perfil"
-                value={formData.perfil}
-                onChange={handleChange}
-                className={`w-full p-3 border rounded ${errors.perfil ? "border-red-500" : "border-gray-300"}`}
-              >
-                <option value="">Selecione...</option>
-                {perfis.map((perfil) => (
-                  <option key={perfil} value={perfil}>{perfil}</option>
-                ))}
-              </select>
-              {errors.perfil && <p className="text-red-500 text-sm">{errors.perfil}</p>}
-            </div>
+          <div className="mb-4">
+            <label className="block font-medium mb-1" htmlFor="email">
+              E-mail
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              className={`w-full p-3 border rounded ${
+                errors.email ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
           </div>
 
-          <button type="submit" className="w-full bg-blue-600 text-white py-3 rounded mt-6 hover:bg-blue-700">
-            Cadastrar
-          </button>
-        </form>
-      </div>
+          <div className="mb-4">
+            <label className="block font-medium mb-1" htmlFor="cpf">
+              CPF
+            </label>
+            <input
+              id="cpf"
+              name="cpf"
+              type="text"
+              value={formData.cpf}
+              onChange={handleChange}
+              className={`w-full p-3 border rounded ${
+                errors.cpf ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {errors.cpf && <p className="text-red-500 text-sm">{errors.cpf}</p>}
+          </div>
+
+          <div className="mb-4">
+            <label className="block font-medium mb-1" htmlFor="perfil">
+              Perfil
+            </label>
+            <select
+              id="perfil"
+              name="perfil"
+              value={formData.perfil}
+              onChange={handleChange}
+              className={`w-full p-3 border rounded ${
+                errors.perfil ? "border-red-500" : "border-gray-300"
+              }`}
+            >
+              <option value="">Selecione...</option>
+              {perfis.map((perfil) => (
+                <option key={perfil} value={perfil}>
+                  {perfil}
+                </option>
+              ))}
+            </select>
+            {errors.perfil && <p className="text-red-500 text-sm">{errors.perfil}</p>}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="mb-4">
+            <label className="block font-medium mb-1" htmlFor="rua">
+              Rua
+            </label>
+            <input
+              id="rua"
+              name="rua"
+              type="text"
+              value={formData.rua}
+              onChange={handleChange}
+              className={`w-full p-3 border rounded ${
+                errors.endereco ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="block font-medium mb-1" htmlFor="numero">
+              Número
+            </label>
+            <input
+              id="numero"
+              name="numero"
+              type="text"
+              value={formData.numero}
+              onChange={handleChange}
+              className={`w-full p-3 border rounded ${
+                errors.endereco ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          <div className="mb-4">
+            <label className="block font-medium mb-1" htmlFor="bairro">
+              Bairro
+            </label>
+            <input
+              id="bairro"
+              name="bairro"
+              type="text"
+              value={formData.bairro}
+              onChange={handleChange}
+              className={`w-full p-3 border rounded ${
+                errors.endereco ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="block font-medium mb-1" htmlFor="cidade">
+              Cidade
+            </label>
+            <input
+              id="cidade"
+              name="cidade"
+              type="text"
+              value={formData.cidade}
+              onChange={handleChange}
+              className={`w-full p-3 border rounded ${
+                errors.endereco ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="block font-medium mb-1" htmlFor="estado">
+              Estado
+            </label>
+            <input
+              id="estado"
+              name="estado"
+              type="text"
+              value={formData.estado}
+              onChange={handleChange}
+              className={`w-full p-3 border rounded ${
+                errors.endereco ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <label className="block font-medium mb-1" htmlFor="senha">
+            Senha
+          </label>
+          <input
+            id="senha"
+            name="senha"
+            type="password"
+            value={formData.senha}
+            onChange={handleChange}
+            className={`w-full p-3 border rounded ${
+              errors.senha ? "border-red-500" : "border-gray-300"
+            }`}
+          />
+          {errors.senha && <p className="text-red-500 text-sm">{errors.senha}</p>}
+        </div>
+
+        <button
+          type="submit"
+          className="w-full bg-blue-500 text-white py-3 rounded font-medium hover:bg-blue-600"
+        >
+          Cadastrar
+        </button>
+      </form>
+    </div>
     </div>
   );
 };
