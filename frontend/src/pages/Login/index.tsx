@@ -49,7 +49,8 @@ function Login() {
             const data = await response.json();
             console.log("Token recebido:", data.token);
             localStorage.setItem('jwt', data.token); // Armazenar token
-            //window.location.href = "https://wisdowkeeper-o6y5.vercel.app/dashboard";
+            window.location.assign('https://wisdowkeeper-o6y5.vercel.app/dashboard');
+
           } else {
             alert("Usuário ou senha incorretos");
             console.error('Login falhou');
