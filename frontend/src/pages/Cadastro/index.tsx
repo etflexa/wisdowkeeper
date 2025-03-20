@@ -79,32 +79,45 @@ const Cadastro = () => {
     e.preventDefault();
     if (validate()) {
       const token = localStorage.getItem('jwt');
-
-      const response = await fetch('https://wisdowkeeper-o6y5.vercel.app/cadastro', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (!response.ok) {
-        if (response.status === 422) {
-          alert("O endereço de email já está sendo usado.");
-        } 
-        if (response.status === 433) {
-          alert("O CPF já está sendo utilizado, indique outro.");
-        } 
-        if (response.status === 400) {
-          alert("Faça login para cadastrar usuário.");
-          window.location.href = "https://wisdowkeeper-o6y5.vercel.app";
-        } 
-        throw new Error(`Erro: ${response.status} - ${response.statusText}`);
+      
+      if (!token) {
+        alert("Token de autenticação não encontrado!");
+        return;
       }
 
-      alert("Cadastro realizado!");
-      navigate('/dashboard'); // Redireciona para o Dashboard
+      try {
+        const response = await fetch('https://wisdowkeeper-o6y5.vercel.app/cadastro', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(formData),
+        });
+
+        const responseData = await response.json(); // Para pegar os dados da resposta
+
+        if (!response.ok) {
+          console.error("Erro na API:", responseData);
+          if (response.status === 422) {
+            alert("O endereço de email já está sendo usado.");
+          } else if (response.status === 433) {
+            alert("O CPF já está sendo utilizado, indique outro.");
+          } else if (response.status === 400) {
+            alert("Faça login para cadastrar usuário.");
+            window.location.href = "https://wisdowkeeper-o6y5.vercel.app";
+          } else {
+            alert(`Erro inesperado: ${response.status}`);
+          }
+          return;
+        }
+
+        alert("Cadastro realizado!");
+        navigate('/dashboard'); // Redireciona para o Dashboard
+      } catch (error) {
+        console.error("Erro na requisição:", error);
+        alert("Erro ao conectar com o servidor.");
+      }
     }
   };
 
