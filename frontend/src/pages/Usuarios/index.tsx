@@ -4,6 +4,7 @@ import Sidebar from "../../components/Sidebar";
 import axios from 'axios';
 
 
+
 // Definir o tipo do usuário
 type Usuario = {
   id: number;
@@ -15,7 +16,6 @@ type Usuario = {
 
 
 const Usuarios = () => {
-  const navigate = useNavigate();
   const [isSidebarOpen] = useState(false);
   
   // Aplicando o tipo ao useState
@@ -24,6 +24,7 @@ const Usuarios = () => {
   const [filterRole, setFilterRole] = useState(""); // Novo filtro por função
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5; // Paginação
+  const navigate = useNavigate();
   const handleDelete = (email: string, nome: string) => {
     const resposta = window.confirm("excluir usuario "+nome+"?");
     if (resposta) {
@@ -47,7 +48,7 @@ const Usuarios = () => {
                        
             if (response.status === 400) {
               alert("Faça login para remover usuário" );
-              window.location.href = "https://wisdowkeeper-o6y5.vercel.app/";
+              navigate('/usuarios')
             } 
             if (response.status === 404) {
               alert("Usuario não encontrado" );
