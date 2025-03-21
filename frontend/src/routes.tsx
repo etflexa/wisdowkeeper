@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Usuarios from './pages/Usuarios';
 import Dashboard from './pages/Dashboard/index';
 import Cadastro from './pages/Cadastro/index';
+import EditarCadastro from './pages/EditarCadastro/index';
 import CadastroSolucao from './pages/CadastroSolucao/index';
 import EditarSolucao from './pages/EditarSolucao/index';
 import Solucoes from './pages/Soluções/index';
@@ -14,6 +15,7 @@ function MainRoutes() {
       <Route path="/" element={<Login />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/cadastro" element={<Cadastro />} />
+      <Route path="/editarcadastro" element={<EditarCadastro />} />
       <Route path="/cadastroSolucao" element={<CadastroSolucao />} />
       <Route path="/editarsolucao" element={<EditarSolucao />} />
       <Route path="/solucoes" element={<Solucoes />} />
@@ -21,6 +23,7 @@ function MainRoutes() {
       <Route path="*" element={<Navigate to="/" />} />
 
     </Routes>
+    
   );
 }
 
