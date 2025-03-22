@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "../../components/Sidebar";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams,useLocation } from "react-router-dom";
 
 const EditarCadastro = () => {
   const [isSidebarOpen] = useState(false);
+  const location = useLocation();
+  const email = location.state?.email;
   const [formData, setFormData] = useState({
     nome: "",
     email: "",
@@ -26,15 +28,16 @@ const EditarCadastro = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       const token = localStorage.getItem('jwt');
+     
       try {
-        const response = await fetch(`https://wisdowkeeper-novatentativa.onrender.com/usuario/${id}`, {
-          method: 'GET',
+        const response = await fetch('http://localhost:3000/buscarUsuario', {
+          method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json', // Define que o corpo será em JSON4
             'Authorization': `Bearer ${token}`
           },
+          body: JSON.stringify({ email }), // Envia o email no corpo da requisição
         });
-
         if (!response.ok) {
           throw new Error(`Erro: ${response.status} - ${response.statusText}`);
         }
@@ -105,7 +108,7 @@ const EditarCadastro = () => {
     if (validate()) {
       const token = localStorage.getItem('jwt');
       try {
-        const response = await fetch(`https://wisdowkeeper-novatentativa.onrender.com/usuario/${id}`, {
+        const response = await fetch(`http://localhost:3000/editarUsuario`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -118,9 +121,7 @@ const EditarCadastro = () => {
         if (!response.ok) {
           if (response.status === 422) {
             alert("O endereço de email já está sendo usado.");
-          } else if (response.status === 433) {
-            alert("O CPF já está sendo utilizado, indique outro.");
-          } else if (response.status === 400) {
+          }  else if (response.status === 400) {
             alert("Faça login para editar o usuário.");
             navigate('/login');
           } else {
@@ -190,7 +191,7 @@ const EditarCadastro = () => {
               <label className="block font-medium mb-1" htmlFor="cpf">
                 CPF
               </label>
-              <input
+                <input
                 id="cpf"
                 name="cpf"
                 type="text"
@@ -199,7 +200,8 @@ const EditarCadastro = () => {
                 className={`w-full p-3 border rounded ${
                   errors.cpf ? "border-red-500" : "border-gray-300"
                 }`}
-              />
+                readOnly
+                  />
               {errors.cpf && <p className="text-red-500 text-sm">{errors.cpf}</p>}
             </div>
 

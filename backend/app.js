@@ -90,7 +90,88 @@ app.get('/getUsers', checkToken, async (req,res)=>{
 
 })
 
+// Rota POST para buscar usuário por email
+app.post('/buscarUsuario',checkToken, async (req, res) => {
+  try {
+    // Pega o e-mail do corpo da requisição
+    const { email } = req.body;
 
+    // Valida se o e-mail foi fornecido
+    if (!email) {
+      return res.status(400).json({ mensagem: 'O email é obrigatório.' });
+    }
+
+    // Busca o usuário no banco de dados pelo e-mail
+    const usuario = await User.findOne({ email });
+
+    // Se o usuário não for encontrado
+    if (!usuario) {
+      return res.status(404).json({ mensagem: 'Usuário não encontrado.' });
+    }
+
+    // Retorna os dados do usuário
+    return res.status(200).json({
+      id: usuario._id,
+      nome: usuario.nome,
+      email: usuario.email,
+      cpf: usuario.cpf,
+      perfil: usuario.perfil,
+      rua:usuario.rua,
+      numero:usuario.numero,
+      bairro:usuario.bairro,
+      cidade: usuario.cidade,
+      estado: usuario.estado
+    });
+
+  } catch (err) {
+    console.error('Erro ao buscar usuário:', err);
+    return res.status(500).json({ mensagem: 'Erro ao buscar usuário.' });
+  }
+});
+
+app.put('/editarUsuario',checkToken, async (req, res) => {
+  
+  const { cpf, nome, email, perfil,rua,numero,bairro,cidade,estado,senha } = req.body; // Pega os dados do corpo da requisição
+
+  try {
+    // Encontre o usuário pelo CPF
+    const usuario = await User.findOne({ cpf });
+
+    if (!usuario) {
+      return res.status(404).json({ mensagem: 'Usuário não encontrado' });
+    }
+    const existe = await User.exists({ email });
+
+    if (existe &&(email != usuario.email)) {
+      console.log('email já utilizado');
+      return res.status(422).json({ msg: `O e-mail ${email} já está cadastrado. Utilize outro e-mail` });
+    } 
+
+    // Atualize os campos conforme necessário
+    
+    
+    if (senha) {
+      usuario.password = senha; // Atualiza a senha se o campo estiver presente
+    }
+    usuario.nome=nome;
+    usuario.email=email;
+    usuario.perfil=perfil;
+    usuario.rua=rua;
+    usuario.numero=numero;
+    usuario.bairro=bairro;
+    usuario.cidade=cidade;
+    usuario.estado=estado;
+
+
+    // Salve as alterações no banco de dados
+    await usuario.save();
+
+    res.status(200).json({ mensagem: 'Usuário atualizado com sucesso', usuario });
+  } catch (erro) {
+    console.error(erro);
+    res.status(500).json({ mensagem: 'Erro ao atualizar usuário' });
+  }
+});
 
 //Login
 app.post('/login', async (req, res) => {
@@ -149,7 +230,7 @@ if( !passwordMatches) {
         id: user._id,
       },
       secret,
-      { expiresIn: '3m' }
+      { expiresIn: '10m' }
     )
     console.log("passou tudo, o token é ", token );
     res.status(200).json({msg: 'Autenticação realizada com sucesso!', token})

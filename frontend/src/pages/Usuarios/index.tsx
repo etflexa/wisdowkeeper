@@ -25,9 +25,16 @@ const Usuarios = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5; // Paginação
   const navigate = useNavigate();
-  const handleEditarClick = () => {
-    navigate(`/editarcadastro`); // Redireciona para a página de edição com o ID do usuário
+
+  const handleEditarClick = (email: string, nome: string) => {
+    const resposta = window.confirm("Editar usuario "+nome+"?");
+    if(resposta){
+      navigate(`/editarcadastro`, { state: { email } }); // Redireciona para a página de edição com o ID do usuário
+
+    }
   };
+
+
   const handleDelete = (email: string, nome: string) => {
     const resposta = window.confirm("excluir usuario "+nome+"?");
     if (resposta) {
@@ -184,7 +191,7 @@ const Usuarios = () => {
                       Ativo
                     </td>
                     <td className="p-3 flex gap-2">
-                      <button onClick={handleEditarClick} className="bg-yellow-500 text-white px-3 py-1 rounded-md">Editar</button>
+                      <button onClick={() => handleEditarClick(user.email, user.nome)} className="bg-yellow-500 text-white px-3 py-1 rounded-md">Editar</button>
                       <button onClick={() => handleDelete(user.email, user.nome)}  className="bg-red-600 text-white px-3 py-1 rounded-md">Excluir</button>
                     </td>
                   </tr>
