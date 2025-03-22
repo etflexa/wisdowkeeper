@@ -6,6 +6,7 @@ import EditarCadastro from './pages/EditarCadastro/index';
 import CadastroSolucao from './pages/CadastroSolucao/index';
 import EditarSolucao from './pages/EditarSolucao/index';
 import Solucoes from './pages/Soluções/index';
+import ConsultarSolucao from './pages/ConsultarSolucao/index';
 import Login from './pages/Login/index';
 
 
@@ -19,6 +20,7 @@ function MainRoutes() {
       <Route path="/cadastroSolucao" element={<CadastroSolucao />} />
       <Route path="/editarsolucao" element={<EditarSolucao />} />
       <Route path="/solucoes" element={<Solucoes />} />
+      <Route path="/consultarsolucao" element={<ConsultarSolucao />} />
       <Route path="/usuarios" element={<Usuarios />} />
       <Route path="*" element={<Navigate to="/" />} />
 

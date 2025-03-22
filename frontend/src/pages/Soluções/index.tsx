@@ -24,6 +24,11 @@ const Solutions = () => {
     solucao.categoria.toLowerCase().includes(busca.toLowerCase())
   );
 
+  // Função para redirecionar para a página de consulta da solução
+  const handleConsultarSolucao = () => {
+    navigate(`/consultarsolucao/`);
+  };
+
   return (
     <div className="min-h-screen flex bg-gray-100">
       {/* Sidebar */}
@@ -63,13 +68,30 @@ const Solutions = () => {
             </thead>
             <tbody>
               {solucoesFiltradas.map((solucao) => (
-                <tr key={solucao.id} className="border-b hover:bg-gray-100">
+                <tr 
+                  key={solucao.id} 
+                  className="border-b hover:bg-gray-100 cursor-pointer"
+                  onClick={() => handleConsultarSolucao()}
+                >
                   <td className="p-3">{solucao.titulo}</td>
                   <td className="p-3">{solucao.categoria}</td>
                   <td className="p-3">{solucao.dataCriacao}</td>
                   <td className="p-3">
-                    <button className="text-blue-600 mr-3 hover:underline" onClick={() => navigate(`/editarsolucao`)}>Editar</button>
-                    <button className="text-red-600 hover:underline">Excluir</button>
+                    <button 
+                      className="text-blue-600 mr-3 hover:underline" 
+                      onClick={(e) => {
+                        e.stopPropagation(); // Impede que o evento de clique na linha seja acionado
+                        navigate(`/editarsolucao`);
+                      }}
+                    >
+                      Editar
+                    </button>
+                    <button 
+                      className="text-red-600 hover:underline"
+                      onClick={(e) => e.stopPropagation()} // Impede que o evento de clique na linha seja acionado
+                    >
+                      Excluir
+                    </button>
                   </td>
                 </tr>
               ))}
