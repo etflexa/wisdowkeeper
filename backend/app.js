@@ -78,6 +78,30 @@ app.use(cors());
 
 // Register User
 app.use(CadastrarUserRoute);
+//rota para revalidar o token do usuario
+app.post('/refresh', (req, res) => {
+  const { token } = req.body;
+
+  if (!token) {
+      return res.status(400).json({ message: 'Token is required' });
+  }
+
+  try {
+      // Verifica se o token é válido
+      const decoded = jwt.verify(token, process.env.SECRET);
+
+      // Gera um novo token com o mesmo payload e um novo tempo de expiração
+      const newToken = jwt.sign(
+          { userId: decoded.userId },
+          process.env.SECRET,
+          { expiresIn: '10m' } // Renova por mais 15 minutos, por exemplo
+      );
+
+      res.json({ token: newToken });
+  } catch (error) {
+      res.status(401).json({ message: 'Invalid or expired token' });
+  }
+});
 
 //retorna a lista de usuarios
 app.get('/getUsers', checkToken, async (req,res)=>{

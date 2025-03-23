@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
+import ContadorToken from "../../function/contadorToken";
 
 const EditSolution = () => {
   const { id } = useParams(); // Obtém o ID da solução a ser editada
@@ -47,6 +48,7 @@ const EditSolution = () => {
   return (
     <div className="min-h-screen flex bg-gray-100">
       <Sidebar isSidebarOpen={true} />
+      <ContadorToken />
 
       <div className="flex flex-col items-center justify-center w-full">
         <h1 className="text-3xl font-semibold text-blue-600 mb-6">Editar Solução</h1>

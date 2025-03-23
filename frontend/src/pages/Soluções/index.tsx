@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
+import ContadorToken from "../../function/contadorToken";
 
 interface Solucao {
   id: number;
@@ -33,6 +34,7 @@ const Solutions = () => {
     <div className="min-h-screen flex bg-gray-100">
       {/* Sidebar */}
       <Sidebar isSidebarOpen={isSidebarOpen} className="w-64" /> 
+      <ContadorToken />
   
       {/* Conteúdo Principal */}
       <div className="flex-1 flex flex-col bg-gray-100 p-6">

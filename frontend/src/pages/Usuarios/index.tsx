@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import axios from 'axios';
+import ContadorToken from "../../function/contadorToken";
+
 
 
 
@@ -43,7 +45,7 @@ const Usuarios = () => {
         async function remover(){
           const token = localStorage.getItem('jwt');
       
-          const response = await  fetch('https://wisdowkeeper-novatentativa.onrender.com/removeUser', {
+          const response = await  fetch('http://localhost:3000/removeUser', {
             
             method: 'POST',
             headers: {
@@ -97,7 +99,7 @@ const Usuarios = () => {
       // Adiciona o evento de clique no botão
      
       const token = localStorage.getItem('jwt');
-      const response = await axios.get<Usuario[]>('https://wisdowkeeper-novatentativa.onrender.com/getUsers', {
+      const response = await axios.get<Usuario[]>('http://localhost:3000/getUsers', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -130,6 +132,7 @@ const Usuarios = () => {
     <div className="min-h-screen flex bg-gray-100">
       {/* Sidebar */}
       <Sidebar isSidebarOpen={isSidebarOpen} />
+      <ContadorToken/>
 
       {/* Conteúdo principal */}
       <div className="flex-1 p-6">

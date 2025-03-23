@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import Sidebar from "../../components/Sidebar"
 import { useNavigate } from "react-router-dom";
+import ContadorToken from "../../function/contadorToken";
 
 const Cadastro = () => {
 
@@ -125,6 +126,7 @@ const Cadastro = () => {
     <div className="min-h-screen flex  bg-gray-100">
       {/* Sidebar */}
       <Sidebar isSidebarOpen={isSidebarOpen} />
+      <ContadorToken/>
 
       <div className="flex-1 flex justify-center items-center">
       <form

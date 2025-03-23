@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "../../components/Sidebar";
 import { useNavigate, useParams,useLocation } from "react-router-dom";
+import ContadorToken from "../../function/contadorToken";
 
 const EditarCadastro = () => {
   const [isSidebarOpen] = useState(false);
@@ -144,6 +145,7 @@ const EditarCadastro = () => {
   return (
     <div className="min-h-screen flex bg-gray-100">
       <Sidebar isSidebarOpen={isSidebarOpen} />
+      <ContadorToken />
 
       <div className="flex-1 flex justify-center items-center">
         <form

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import Sidebar from "../../components/Sidebar";
 import { Play, FileText, Globe, Star, Search, ThumbsUp, MessageCircle } from "lucide-react";
+import Modal from "../../components/Modal/ModalConsultaSolucao"; // Importe o componente Modal
+import ContadorToken from "../../function/contadorToken";
 
 interface Media {
   id: number;
@@ -28,6 +30,7 @@ export default function ConsultarSolucao() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState<string>("");
   const [isSidebarOpen] = useState<boolean>(false);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false); // Estado para controlar o modal
 
   const toggleFavorite = (id: number) => {
     setFavorites((prev) =>
@@ -55,10 +58,28 @@ export default function ConsultarSolucao() {
   return (
     <div className="flex h-screen">
       <Sidebar isSidebarOpen={isSidebarOpen} />
-      <div className="flex flex-col flex-1 p-4 bg-gray-100 dark:bg-gray-900 mr-64"> {/* Adicionado mr-64 para afastar da área de mídias */}
-        <header className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-4">
+      <ContadorToken />
+      <div className="flex flex-col flex-1 p-4 bg-gray-100 dark:bg-gray-900 mr-64">
+        {/* Título como link para abrir o modal */}
+        <header
+          className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-4 cursor-pointer hover:underline"
+          onClick={() => setIsModalOpen(true)} // Abre o modal ao clicar
+        >
           Solução: Erro 404 no Sistema X
         </header>
+
+        {/* Modal */}
+        <Modal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)} // Fecha o modal
+          title="Solução: Erro 404 no Sistema X"
+        >
+          <p>
+            Esta é a descrição detalhada da tarefa relacionada ao erro 404 no Sistema X.
+            Aqui você pode adicionar informações adicionais sobre a solução, como etapas
+            para reproduzir o erro, soluções propostas e links úteis.
+          </p>
+        </Modal>
 
         {/* Área de exibição de conteúdo */}
         <div className="flex-1 p-4 flex items-center justify-center bg-white dark:bg-gray-800 rounded-xl shadow-md">
@@ -90,7 +111,7 @@ export default function ConsultarSolucao() {
             onChange={(e) => setNewComment(e.target.value)}
           ></textarea>
           <button onClick={handleAddComment} className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg">Enviar</button>
-          <div className="mt-4 space-y-2">
+          <div className="mt-4 space-y-2 max-h-48 overflow-y-auto">
             {comments.map((comment, index) => (
               <div key={index} className="flex items-center justify-between p-2 bg-gray-200 dark:bg-gray-700 rounded-lg">
                 <span>{comment.text}</span>

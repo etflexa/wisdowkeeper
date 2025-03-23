@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom"; // Importando useNavigate
 import { FaUserCircle, FaBars } from "react-icons/fa";
 import Sidebar from "../../components/Sidebar"
+import ContadorToken from "../../function/contadorToken";
 
 const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -21,6 +22,7 @@ const Dashboard = () => {
     <div className="min-h-screen flex bg-gray-50">
       {/* Sidebar */}
       <Sidebar isSidebarOpen={isSidebarOpen} />
+      <ContadorToken/>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">

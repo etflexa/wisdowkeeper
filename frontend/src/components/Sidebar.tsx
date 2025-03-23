@@ -31,7 +31,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen }) => {
           </Link>
         </li>
         <li>
-          <Link to="/dashboard" className="hover:bg-blue-500 p-2 rounded-lg block">
+          <Link to="/categorizarsolucoes" className="hover:bg-blue-500 p-2 rounded-lg block">
             Categorizar Soluções
           </Link>
         </li>
