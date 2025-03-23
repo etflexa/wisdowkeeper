@@ -45,7 +45,7 @@ const Usuarios = () => {
         async function remover(){
           const token = localStorage.getItem('jwt');
       
-          const response = await  fetch('http://localhost:3000/removeUser', {
+          const response = await  fetch('https://wisdowkeeper-novatentativa.onrender.com/removeUser', {
             
             method: 'POST',
             headers: {
@@ -99,7 +99,7 @@ const Usuarios = () => {
       // Adiciona o evento de clique no botão
      
       const token = localStorage.getItem('jwt');
-      const response = await axios.get<Usuario[]>('http://localhost:3000/getUsers', {
+      const response = await axios.get<Usuario[]>('https://wisdowkeeper-novatentativa.onrender.com/getUsers', {
         headers: {
           'Authorization': `Bearer ${token}`
         }

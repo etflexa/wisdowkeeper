@@ -41,7 +41,7 @@ const ContadorToken = () => {
   const handleStayLoggedIn = async () => {
     const token = localStorage.getItem("jwt");
     try {
-      const response = await fetch("http://localhost:3000/refresh", {
+      const response = await fetch("https://wisdowkeeper-novatentativa.onrender.com/refresh", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
