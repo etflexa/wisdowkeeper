@@ -1,18 +1,18 @@
 import { useState } from "react";
-import { AiOutlineLink } from "react-icons/ai";
+import { AiOutlineLink, AiOutlineClose } from "react-icons/ai";
 import Sidebar from "../../components/Sidebar";
 import ContadorToken from "../../function/contadorToken";
 
 const CriacaoSolucao = () => {
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
-  const [categoria, setCategoria] = useState(""); // Estado para a categoria selecionada
-  const [url, setUrl] = useState(""); // Estado para a URL
+  const [categoria, setCategoria] = useState("");
+  const [links, setLinks] = useState<string[]>([]);
+  const [currentLink, setCurrentLink] = useState("");
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [isSidebarOpen] = useState(false);
 
-  // Opções de categoria
   const categorias = [
     { value: "erro-404", label: "Erro 404" },
     { value: "erro-500", label: "Erro 500" },
@@ -21,8 +21,22 @@ const CriacaoSolucao = () => {
     { value: "seguranca", label: "Segurança" },
   ];
 
+  const handleAddLink = (e: { key: string; preventDefault: () => void; }) => {
+    if (e.key === " " || e.key === "Enter") {
+      e.preventDefault();
+      if (currentLink.trim()) {
+        setLinks([...links, currentLink.trim()]);
+        setCurrentLink("");
+      }
+    }
+  };
+
+  const removeLink = (indexToRemove: number) => {
+    setLinks(links.filter((_, index) => index !== indexToRemove));
+  };
+
   const handleSubmit = () => {
-    if (!titulo || !descricao || !categoria || !url) {
+    if (!titulo || !descricao || !categoria || links.length === 0) {
       alert("Preencha todos os campos obrigatórios");
       return;
     }
@@ -33,13 +47,12 @@ const CriacaoSolucao = () => {
       setTitulo("");
       setDescricao("");
       setCategoria("");
-      setUrl("");
+      setLinks([]);
     }, 2000);
   };
 
   return (
     <div className="min-h-screen flex bg-gray-100">
-      {/* Sidebar */}
       <Sidebar isSidebarOpen={isSidebarOpen} />
       <ContadorToken />
       <div className="flex-1 p-6">
@@ -47,7 +60,6 @@ const CriacaoSolucao = () => {
           <h2 className="text-2xl font-bold mb-4 text-center">Criar Nova Solução</h2>
           {successMessage && <p className="text-green-500 text-center mb-3">{successMessage}</p>}
 
-          {/* Campo de Título */}
           <input
             className="border p-3 mb-3 rounded w-full focus:ring-2 focus:ring-blue-300"
             placeholder="Título"
@@ -55,7 +67,6 @@ const CriacaoSolucao = () => {
             onChange={(e) => setTitulo(e.target.value)}
           />
 
-          {/* Campo de Descrição */}
           <textarea
             className="border p-3 mb-3 rounded w-full h-24 focus:ring-2 focus:ring-blue-300"
             placeholder="Descrição"
@@ -63,7 +74,6 @@ const CriacaoSolucao = () => {
             onChange={(e) => setDescricao(e.target.value)}
           />
 
-          {/* Campo de Categoria (Select) */}
           <select
             className="border p-3 mb-3 rounded w-full focus:ring-2 focus:ring-blue-300 bg-white"
             value={categoria}
@@ -77,27 +87,49 @@ const CriacaoSolucao = () => {
             ))}
           </select>
 
-          {/* Campo de URL */}
-          <div className="flex items-center gap-2 bg-gray-100 p-3 rounded mb-3 w-full hover:bg-gray-200 transition">
-            <AiOutlineLink className="text-blue-500" />
-            <input
-              type="text"
-              className="flex-1 bg-transparent focus:outline-none"
-              placeholder="URL do vídeo, site ou PDF"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-            />
+          {/* Campo de Links modificado */}
+          <div className="mb-3">
+            <div className="flex flex-wrap gap-2 mb-2">
+              {links.map((link, index) => (
+                <div key={index} className="flex items-center bg-blue-100 rounded-full px-3 py-1 text-sm">
+                  <a href={link.startsWith('http') ? link : `https://${link}`} 
+                     target="_blank" 
+                     rel="noopener noreferrer"
+                     className="mr-1 text-blue-600 hover:underline">
+                    {link}
+                  </a>
+                  <button 
+                    onClick={() => removeLink(index)}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    <AiOutlineClose size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            
+            <div className="flex items-center gap-2 bg-gray-100 p-3 rounded hover:bg-gray-200 transition">
+              <AiOutlineLink className="text-blue-500" />
+              <input
+                type="text"
+                className="flex-1 bg-transparent focus:outline-none h-10"
+                placeholder="Cole o link e pressione espaço para adicionar"
+                value={currentLink}
+                onChange={(e) => setCurrentLink(e.target.value)}
+                onKeyDown={handleAddLink}
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Pressione espaço para adicionar múltiplos links</p>
           </div>
 
-          {/* Botão de Salvar */}
           <button
             className={`p-3 rounded w-full transition ${
-              titulo && descricao && categoria && url
+              titulo && descricao && categoria && links.length > 0
                 ? "bg-blue-500 hover:bg-blue-600 text-white"
                 : "bg-gray-400 text-gray-700 cursor-not-allowed"
             }`}
             onClick={handleSubmit}
-            disabled={!titulo || !descricao || !categoria || !url || loading}
+            disabled={!titulo || !descricao || !categoria || links.length === 0 || loading}
           >
             {loading ? "Salvando..." : "Salvar"}
           </button>
