@@ -8,12 +8,14 @@ import ContadorToken from "../../function/contadorToken";
 
 
 // Definir o tipo do usuário
+/*
 type Usuario = {
   id: number;
   nome: string;
   email: string;
   perfil: string
 };
+*/
 
 type Solucao = {
   _id: string;
@@ -27,10 +29,10 @@ const Solucoes = () => {
   const [isSidebarOpen] = useState(false);
   
   // Aplicando o tipo ao useState
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]); // Agora o estado é um array de User
+  //const [usuarios, setUsuarios] = useState<Usuario[]>([]); // Agora o estado é um array de User
   const [solucoes, setSolucoes] = useState<Solucao[]>([]); // Agora o estado é um array de User
   const [search, setSearch] = useState("");
-  const [filterRole, setFilterRole] = useState(""); // Novo filtro por função
+  //const [filterRole, setFilterRole] = useState(""); // Novo filtro por função
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5; // Paginação
   const navigate = useNavigate();
