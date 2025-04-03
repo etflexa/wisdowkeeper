@@ -15,6 +15,7 @@ app.use(express.json()); // Correção: chamar a função express.json()
 
 //Models
 const User = require('./models/User')
+const Solucao = require('./models/Solucao')
 
 // Middleware para manter o servidor ativo
 const keepAliveMiddleware = (req, res, next) => {
@@ -75,6 +76,40 @@ function checkToken(req, res, next) {
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
+app.post('/CadastrarSolucao',checkToken, async (req, res) => {
+  try {
+    // Desestruturando os dados recebidos na requisição
+    const { titulo, descricao, categoria, links } = req.body;
+    const link=String(links);
+    console.log(titulo);
+    console.log(descricao);
+    console.log(categoria);
+    console.log(link);
+    // Verificando se os dados necessários foram enviados
+    if (!titulo || !descricao || !categoria || !link) {
+      return res.status(400).json({ message: 'Todos os campos são obrigatórios.' });
+    }
+
+    // Criando a nova instância do modelo Solucao
+    const novaSolucao = new Solucao({
+      titulo,
+      descricao,
+      categoria,
+      link,
+    });
+
+    // Salvando a nova solução no banco de dados
+    await novaSolucao.save();
+
+    // Respondendo com sucesso
+    res.status(201).json({ message: 'Solução cadastrada com sucesso!', novaSolucao });
+  } catch (err) {
+    // Respondendo com erro
+    console.error(err);
+    res.status(500).json({ message: 'Erro ao cadastrar a solução.' });
+  }
+});
+
 
 // Register User
 app.use(CadastrarUserRoute);
@@ -113,6 +148,23 @@ app.get('/getUsers', checkToken, async (req,res)=>{
   }
 
 })
+//retorna a lista de soluções
+app.get('/getSolucoes',  async (req,res)=>{
+  console.log("entrou");
+
+  try {
+    const solucoes = await Solucao.find({}, '_id titulo categoria'); // Busca todos os usuários no banco de dados
+    console.log(solucoes);
+    return res.json(solucoes); // Retorna a lista de usuários em formato JSON
+  } catch (err) {
+    res.status(500).json({ message: 'Erro ao obter os usuários', error: err });
+  }
+
+})
+
+
+
+
 
 // Rota POST para buscar usuário por email
 app.post('/buscarUsuario',checkToken, async (req, res) => {
@@ -289,7 +341,32 @@ app.post('/removeUser', checkToken, async (req, res) => {
       return res.status(500).json({ message: "Erro ao tentar remover o usuário." });
   }
 });
+app.post('/removerSolucao', checkToken, async (req, res) => {
+  const { _id } = req.body;
+  console.log(_id);
 
+  if (!_id) {
+      return res.status(400).json({ message: "O campo '_id' é obrigatório." });
+  }
+
+  try {
+      // Verifica se o usuário existe
+      const soluc = await Solucao.findOne({ _id });
+
+      if (!soluc) {
+          return res.status(404).json({ message: "Solução não encontrado." });
+      }
+
+      // Remove o usuário
+      await Solucao.deleteOne({ _id });
+      
+
+      return res.status(200).json({ message: "Solucao removida com sucesso." });
+  } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Erro ao tentar remover " });
+  }
+});
 
 // Credenciais
 const dbUser = process.env.DB_USER;

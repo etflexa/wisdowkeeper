@@ -2,6 +2,8 @@ import { useState } from "react";
 import { AiOutlineLink, AiOutlineClose } from "react-icons/ai";
 import Sidebar from "../../components/Sidebar";
 import ContadorToken from "../../function/contadorToken";
+import { useNavigate } from "react-router-dom";
+
 
 const CriacaoSolucao = () => {
   const [titulo, setTitulo] = useState("");
@@ -12,6 +14,7 @@ const CriacaoSolucao = () => {
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [isSidebarOpen] = useState(false);
+  const navigate = useNavigate(); // Hook para navegação
 
   const categorias = [
     { value: "erro-404", label: "Erro 404" },
@@ -43,11 +46,72 @@ const CriacaoSolucao = () => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
+
+
+      async function enviar(){
+        const token = localStorage.getItem('jwt');
+      try{
+      const response = await  fetch('https://wisdowkeeper-novatentativa.onrender.com/CadastrarSolucao', {
+        
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json', // Define o tipo de conteúdo como JSON
+            'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({
+          titulo,descricao,categoria,links
+        }   
+        
+        ) // Converte os dados do formulário em JSON
+    })
+    const responseData = await response.json();
+    console.error("Erro na API:", responseData);
+      if (!response.ok) {
+      
+        if (response.status === 400) {
+          alert("Preencha todos os campos " );
+        
+        } 
+        if (response.status === 500) {
+          alert("erro ao cadastrar a solução " );
+        
+        } 
+    
+        throw new Error(`Erro: ${response.status} - ${response.statusText}`);
+
+      }
+      alert("Solução cadastrada com sucesso!" );
+     
+    } catch (error) {
+      console.error("Erro na requisição:", error);
+      alert("Erro ao conectar com o servidor.");
+    }
+      }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      enviar();
+
       setSuccessMessage("Solução cadastrada com sucesso!");
       setTitulo("");
       setDescricao("");
       setCategoria("");
       setLinks([]);
+      navigate('/dashboard');
     }, 2000);
   };
 

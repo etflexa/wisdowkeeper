@@ -1,113 +1,221 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
+import axios from 'axios';
 import ContadorToken from "../../function/contadorToken";
 
-interface Solucao {
+
+
+
+// Definir o tipo do usuário
+type Usuario = {
   id: number;
+  nome: string;
+  email: string;
+  perfil: string
+};
+
+type Solucao = {
+  _id: string;
   titulo: string;
   categoria: string;
-  dataCriacao: string;
-}
+ 
+};
 
-const Solutions = () => {
-  const navigate = useNavigate();
+
+const Solucoes = () => {
   const [isSidebarOpen] = useState(false);
-  const [busca, setBusca] = useState("");
-  const [solucoes] = useState<Solucao[]>([
-    { id: 1, titulo: "Erro 404 ao acessar módulo", categoria: "Erro", dataCriacao: "2024-02-10" },
-    { id: 2, titulo: "Como resetar senha", categoria: "Configuração", dataCriacao: "2024-02-12" },
-  ]);
+  
+  // Aplicando o tipo ao useState
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]); // Agora o estado é um array de User
+  const [solucoes, setSolucoes] = useState<Solucao[]>([]); // Agora o estado é um array de User
+  const [search, setSearch] = useState("");
+  const [filterRole, setFilterRole] = useState(""); // Novo filtro por função
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5; // Paginação
+  const navigate = useNavigate();
 
-  // Filtrar soluções
-  const solucoesFiltradas = solucoes.filter(solucao =>
-    solucao.titulo.toLowerCase().includes(busca.toLowerCase()) ||
-    solucao.categoria.toLowerCase().includes(busca.toLowerCase())
+ 
+  const handleDelete = (_id: string, titulo: string) => {
+    const resposta = window.confirm("excluir usuario "+titulo+"?");
+    if (resposta) {
+
+        console.log("Usuário confirmou.");
+        async function remover(){
+          const token = localStorage.getItem('jwt');
+      
+          const response = await  fetch('https://wisdowkeeper-novatentativa.onrender.com/removerSolucao', {
+            
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json', // Define o tipo de conteúdo como JSON
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({
+                _id : _id
+            }) // Converte os dados do formulário em JSON
+        })
+          if (!response.ok) {
+                       
+            if (response.status === 400) {
+              alert("Faça login para remover usuário" );
+              navigate('/usuarios')
+            } 
+            if (response.status === 404) {
+              alert("Usuario não encontrado" );
+              
+            } 
+            
+            if (response.status === 500) {
+              alert("erro ao remover" );
+              
+              
+            } 
+            
+        
+            throw new Error(`Erro: ${response.status} - ${response.statusText}`);
+    
+          }
+          if(response.ok){
+            alert("Solução removida!" );
+            navigate('/Dashboard')
+            
+          }
+         
+
+        }
+        remover();
+   
+    } 
+  };
+  // Simulação de usuários
+  useEffect(() => {
+    const fetchSolucoes = async () => {
+    
+      
+      // Adiciona o evento de clique no botão
+     
+      const token = localStorage.getItem('jwt');
+      const response = await axios.get<Solucao[]>('https://wisdowkeeper-novatentativa.onrender.com/getSolucoes', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+     
+      setSolucoes(response.data);
+    };
+    fetchSolucoes();
+  }, []);
+
+  // Filtrando usuários por nome, email ou função
+  const filteredUsuarios = solucoes.filter(
+    (user) =>
+      (user.titulo.toLowerCase().includes(search.toLowerCase()) ||
+        user.categoria.toLowerCase().includes(search.toLowerCase()))
   );
 
-  // Função para redirecionar para a página de consulta da solução
-  const handleConsultarSolucao = () => {
-    navigate(`/consultarsolucao/`);
-  };
+
+  // Paginação
+  const totalPages = Math.ceil(filteredUsuarios.length / itemsPerPage);
+  const paginatedUsuarios = filteredUsuarios.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <div className="min-h-screen flex bg-gray-100">
       {/* Sidebar */}
-      <Sidebar isSidebarOpen={isSidebarOpen} className="w-64" /> 
-      <ContadorToken />
-  
-      {/* Conteúdo Principal */}
-      <div className="flex-1 flex flex-col bg-gray-100 p-6">
+      <Sidebar isSidebarOpen={isSidebarOpen} />
+      <ContadorToken/>
+
+      {/* Conteúdo principal */}
+      <div className="flex-1 p-6">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-semibold text-blue-600">Soluções</h1>
+          <h1 className="text-2xl font-semibold text-blue-600">Soluções</h1>
           <button
-            onClick={() => navigate("/cadastrosolucao")}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+            onClick={() => navigate("/CadastrarSolucao")}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition"
           >
-            Criar Solução
+            Cadastrar Solução
           </button>
         </div>
-  
-        {/* Barra de busca */}
-        <input
-          type="text"
-          placeholder="Buscar solução..."
-          className="p-2 border rounded-lg w-full mb-4"
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-        />
-  
-        {/* Tabela de soluções */}
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
+
+        {/* Filtros */}
+        <div className="flex gap-4 mb-4">
+          <input
+            type="text"
+            placeholder="Buscar usuário..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full p-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        
+        </div>
+
+        {/* Tabela de usuários */}
+        <div className="bg-white shadow-lg rounded-lg overflow-hidden">
           <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-blue-600 text-white">
-                <th className="p-3 text-left">Título</th>
-                <th className="p-3 text-left">Categoria</th>
-                <th className="p-3 text-left">Data</th>
+            <thead className="bg-blue-600 text-white">
+              <tr>
+                <th className="p-3 text-left">Titulo</th>
+                <th className="p-3 text-left">Categoria</th>   
+                <th className="p-3 text-left"></th>               
                 <th className="p-3 text-left">Ações</th>
               </tr>
             </thead>
             <tbody>
-              {solucoesFiltradas.map((solucao) => (
-                <tr 
-                  key={solucao.id} 
-                  className="border-b hover:bg-gray-100 cursor-pointer"
-                  onClick={() => handleConsultarSolucao()}
-                >
-                  <td className="p-3">{solucao.titulo}</td>
-                  <td className="p-3">{solucao.categoria}</td>
-                  <td className="p-3">{solucao.dataCriacao}</td>
-                  <td className="p-3">
-                    <button 
-                      className="text-blue-600 mr-3 hover:underline" 
-                      onClick={(e) => {
-                        e.stopPropagation(); // Impede que o evento de clique na linha seja acionado
-                        navigate(`/editarsolucao`);
-                      }}
-                    >
-                      Editar
-                    </button>
-                    <button 
-                      className="text-red-600 hover:underline"
-                      onClick={(e) => e.stopPropagation()} // Impede que o evento de clique na linha seja acionado
-                    >
-                      Excluir
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {solucoesFiltradas.length === 0 && (
+              {paginatedUsuarios.length > 0 ? (
+                paginatedUsuarios.map((user) => (
+                  <tr key={user._id} className="border-b hover:bg-gray-100">
+                    <td className="p-3 flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                        {user.titulo.charAt(0)}
+                      </div>
+                      {user.titulo}
+                    </td>
+                    <td className="p-3">{user.categoria}</td>
+                    <td className="p-3"></td>
+                   
+                    <td className="p-3 flex gap-2">
+                      <button className="bg-yellow-500 text-white px-3 py-1 rounded-md">Editar</button>
+                      <button onClick={() => handleDelete(user._id, user.titulo)} className="bg-red-600 text-white px-3 py-1 rounded-md">Excluir</button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
                 <tr>
-                  <td colSpan={4} className="p-4 text-center text-gray-500">Nenhuma solução encontrada</td>
+                  <td colSpan={5} className="text-center p-4 text-gray-500">
+                    Nenhuma solução encontrado
+                  </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+
+        {/* Paginação */}
+        {totalPages > 1 && (
+          <div className="flex justify-center mt-4">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(currentPage - 1)}
+              className="px-3 py-1 mx-1 bg-gray-300 rounded disabled:opacity-50"
+            >
+              Anterior
+            </button>
+            <span className="px-3 py-1 mx-1">{currentPage} / {totalPages}</span>
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(currentPage + 1)}
+              className="px-3 py-1 mx-1 bg-gray-300 rounded disabled:opacity-50"
+            >
+              Próximo
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default Solutions;
+export default Solucoes;

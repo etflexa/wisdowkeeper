@@ -18,10 +18,11 @@ function MainRoutes() {
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/cadastro" element={<Cadastro />} />
       <Route path="/editarcadastro" element={<EditarCadastro />} />
-      <Route path="/cadastroSolucao" element={<CadastroSolucao />} />
+      <Route path="/+" element={<CadastroSolucao />} />
       <Route path="/editarsolucao" element={<EditarSolucao />} />
       <Route path="/solucoes" element={<Solucoes />} />
       <Route path="/consultarsolucao" element={<ConsultarSolucao />} />
+      <Route path="/CadastrarSolucao" element={<CadastroSolucao />} />
       <Route path="/categorizarSolucoes" element={<CategorizarSolucoes />} />
       <Route path="/usuarios" element={<Usuarios />} />
       <Route path="*" element={<Navigate to="/" />} />
