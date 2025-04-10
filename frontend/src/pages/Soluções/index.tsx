@@ -8,14 +8,12 @@ import ContadorToken from "../../function/contadorToken";
 
 
 // Definir o tipo do usuário
-/*
 type Usuario = {
   id: number;
   nome: string;
   email: string;
   perfil: string
 };
-*/
 
 type Solucao = {
   _id: string;
@@ -29,14 +27,18 @@ const Solucoes = () => {
   const [isSidebarOpen] = useState(false);
   
   // Aplicando o tipo ao useState
-  //const [usuarios, setUsuarios] = useState<Usuario[]>([]); // Agora o estado é um array de User
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]); // Agora o estado é um array de User
   const [solucoes, setSolucoes] = useState<Solucao[]>([]); // Agora o estado é um array de User
   const [search, setSearch] = useState("");
-  //const [filterRole, setFilterRole] = useState(""); // Novo filtro por função
+  const [filterRole, setFilterRole] = useState(""); // Novo filtro por função
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5; // Paginação
   const navigate = useNavigate();
-
+  const handleEditarClick = (id: string) => {
+    
+   
+    navigate(`/consultarsolucao`, { state: { id } });
+  };
  
   const handleDelete = (_id: string, titulo: string) => {
     const resposta = window.confirm("excluir usuario "+titulo+"?");
@@ -179,7 +181,7 @@ const Solucoes = () => {
                     <td className="p-3"></td>
                    
                     <td className="p-3 flex gap-2">
-                      <button className="bg-yellow-500 text-white px-3 py-1 rounded-md">Editar</button>
+                      <button onClick={() => handleEditarClick(user._id)} className="bg-yellow-500 text-white px-3 py-1 rounded-md">Visualizar</button>
                       <button onClick={() => handleDelete(user._id, user.titulo)} className="bg-red-600 text-white px-3 py-1 rounded-md">Excluir</button>
                     </td>
                   </tr>

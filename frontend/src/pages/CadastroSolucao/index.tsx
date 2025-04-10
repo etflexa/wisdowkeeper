@@ -9,6 +9,8 @@ const CriacaoSolucao = () => {
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [categoria, setCategoria] = useState("");
+  const [linkp, setLinkp] = useState("");
+  const [linkv, setLinkv] = useState("");
   const [links, setLinks] = useState<string[]>([]);
   const [currentLink, setCurrentLink] = useState("");
   const [loading, setLoading] = useState(false);
@@ -39,7 +41,7 @@ const CriacaoSolucao = () => {
   };
 
   const handleSubmit = () => {
-    if (!titulo || !descricao || !categoria || links.length === 0) {
+    if (!titulo || !descricao || !categoria ) {
       alert("Preencha todos os campos obrigatórios");
       return;
     }
@@ -59,7 +61,7 @@ const CriacaoSolucao = () => {
             'Authorization': `Bearer ${token}` 
         },
         body: JSON.stringify({
-          titulo,descricao,categoria,links
+          titulo,descricao,categoria,linkp,linkv
         }   
         
         ) // Converte os dados do formulário em JSON
@@ -111,6 +113,8 @@ const CriacaoSolucao = () => {
       setDescricao("");
       setCategoria("");
       setLinks([]);
+      setLinkp("");
+      setLinkv("");
       navigate('/dashboard');
     }, 2000);
   };
@@ -150,50 +154,32 @@ const CriacaoSolucao = () => {
               </option>
             ))}
           </select>
+          <textarea
+            className="border p-3 mb-3 rounded w-full h-24 focus:ring-2 focus:ring-blue-300"
+            placeholder="Link do Video"
+            value={linkv}
+            onChange={(e) => setLinkv(e.target.value)}
+          />
+           <textarea
+            className="border p-3 mb-3 rounded w-full h-24 focus:ring-2 focus:ring-blue-300"
+            placeholder="Link do PDF"
+            value={linkp}
+            onChange={(e) => setLinkp(e.target.value)}
+          />
 
           {/* Campo de Links modificado */}
-          <div className="mb-3">
-            <div className="flex flex-wrap gap-2 mb-2">
-              {links.map((link, index) => (
-                <div key={index} className="flex items-center bg-blue-100 rounded-full px-3 py-1 text-sm">
-                  <a href={link.startsWith('http') ? link : `https://${link}`} 
-                     target="_blank" 
-                     rel="noopener noreferrer"
-                     className="mr-1 text-blue-600 hover:underline">
-                    {link}
-                  </a>
-                  <button 
-                    onClick={() => removeLink(index)}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    <AiOutlineClose size={14} />
-                  </button>
-                </div>
-              ))}
-            </div>
+        
             
-            <div className="flex items-center gap-2 bg-gray-100 p-3 rounded hover:bg-gray-200 transition">
-              <AiOutlineLink className="text-blue-500" />
-              <input
-                type="text"
-                className="flex-1 bg-transparent focus:outline-none h-10"
-                placeholder="Cole o link e pressione espaço para adicionar"
-                value={currentLink}
-                onChange={(e) => setCurrentLink(e.target.value)}
-                onKeyDown={handleAddLink}
-              />
-            </div>
-            <p className="text-xs text-gray-500 mt-1">Pressione espaço para adicionar múltiplos links</p>
-          </div>
+         
 
           <button
             className={`p-3 rounded w-full transition ${
-              titulo && descricao && categoria && links.length > 0
+              titulo && descricao && categoria 
                 ? "bg-blue-500 hover:bg-blue-600 text-white"
                 : "bg-gray-400 text-gray-700 cursor-not-allowed"
             }`}
             onClick={handleSubmit}
-            disabled={!titulo || !descricao || !categoria || links.length === 0 || loading}
+            disabled={!titulo || !descricao || !categoria}
           >
             {loading ? "Salvando..." : "Salvar"}
           </button>

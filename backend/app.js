@@ -79,24 +79,31 @@ app.use(cors());
 app.post('/CadastrarSolucao',checkToken, async (req, res) => {
   try {
     // Desestruturando os dados recebidos na requisição
-    const { titulo, descricao, categoria, links } = req.body;
+    const { titulo, descricao, categoria, links, linkp,linkv } = req.body;
     const link=String(links);
     console.log(titulo);
     console.log(descricao);
     console.log(categoria);
-    console.log(link);
+   
     // Verificando se os dados necessários foram enviados
-    if (!titulo || !descricao || !categoria || !link) {
+    if (!titulo || !descricao || !categoria ) {
       return res.status(400).json({ message: 'Todos os campos são obrigatórios.' });
     }
-
+    if(!linkv){
+      linkv='null'
+    }
+    if(!linkp){
+      linkp='null'
+    }
     // Criando a nova instância do modelo Solucao
     const novaSolucao = new Solucao({
       titulo,
       descricao,
       categoria,
-      link,
+      linkp,
+      linkv
     });
+  
 
     // Salvando a nova solução no banco de dados
     await novaSolucao.save();
@@ -110,6 +117,26 @@ app.post('/CadastrarSolucao',checkToken, async (req, res) => {
   }
 });
 
+// Rota que recebe o id e retorna o respectivo objeto
+app.post('/getSolucao', async (req, res) => {
+    const { id } = req.body;
+  
+
+    try {
+        // Buscando o documento pelo ID
+        const solucao = await Solucao.findById(id);
+
+        if (!solucao) {
+            return res.status(404).json({ message: 'Solução não encontrada.' });
+        }
+
+        // Retornando o objeto encontrado
+        res.status(200).json(solucao);
+        console.log(solucao);
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao buscar a solução.', error: error.message });
+    }
+});
 
 // Register User
 app.use(CadastrarUserRoute);

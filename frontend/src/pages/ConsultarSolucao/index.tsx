@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "../../components/Sidebar";
 import { Play, FileText, Globe, Star, Search, ThumbsUp, MessageCircle } from "lucide-react";
-import Modal from "../../components/Modal/ModalConsultaSolucao"; // Importe o componente Modal
+import Modal from "../../components/Modal/ModalConsultaSolucao";
 import ContadorToken from "../../function/contadorToken";
+import axios from 'axios';
+import { useLocation } from "react-router-dom";
 
 interface Media {
   id: number;
@@ -16,21 +18,32 @@ interface Comment {
   text: string;
   likes: number;
 }
-
-const mockPlaylist: Media[] = [
-  { id: 1, type: "video", title: "Tutorial Erro 404", src: "https://www.youtube.com/embed/2nSuEkx65NM?si=YgRx1MVq1x6bYkVZ", favorite: false },
-  { id: 2, type: "pdf", title: "Manual de Correção", src: "https://educapes.capes.gov.br/bitstream/capes/560827/2/Apostila%20-%20Curso%20de%20L%C3%B3gica%20de%20Programa%C3%A7%C3%A3o.pdf", favorite: false },
-  { id: 3, type: "link", title: "StackOverflow", src: "https://stackoverflow.com/questions/29658375/what-is-meaning-of-error-404-not-found", favorite: false },
-];
+type Solucao = {
+  _id: string
+  titulo: String,
+  descricao: String,
+  categoria: String,
+  linkp: String,
+  linkv: String
+};
 
 export default function ConsultarSolucao() {
+  const [solucao, setSolucao] = useState<Solucao | null>(null);
+  const location = useLocation();
+  const id = location.state?.id;
+  const [mockPlaylist, setMockPlaylist] = useState<Media[]>([
+    { id: 1, type: "video", title: "Solução em Vídeo", src: "", favorite: false },
+    { id: 2, type: "pdf", title: "Documentação PDF", src: "", favorite: false },
+    { id: 3, type: "link", title: "StackOverflow", src: "https://stackoverflow.com/questions/29658375/what-is-meaning-of-error-404-not-found", favorite: false },
+  ]);
+  
   const [selectedMedia, setSelectedMedia] = useState<Media>(mockPlaylist[0]);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [favorites, setFavorites] = useState<number[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState<string>("");
   const [isSidebarOpen] = useState<boolean>(false);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false); // Estado para controlar o modal
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
   const toggleFavorite = (id: number) => {
     setFavorites((prev) =>
@@ -55,33 +68,68 @@ export default function ConsultarSolucao() {
     media.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  useEffect(() => {
+    const fetchSolucao = async () => {
+      const token = localStorage.getItem('jwt');
+      try {
+        const response = await axios.post<Solucao>('https://wisdowkeeper-novatentativa.onrender.com/getSolucao', 
+          { id },  // Enviando o ID no corpo da requisição
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+          }
+        );
+        
+        setSolucao(response.data);
+        
+        // Atualiza a playlist com os links da solução
+        const updatedPlaylist = mockPlaylist.map(media => {
+          if (media.type === "video") {
+            return { ...media, src: String(response.data.linkv) };
+          } else if (media.type === "pdf") {
+            return { ...media, src: String(response.data.linkp) };
+          }
+          return media;
+        });
+        
+        setMockPlaylist(updatedPlaylist);
+        setSelectedMedia(updatedPlaylist[0]);
+        
+      } catch (err) {
+        console.error("Erro ao buscar solução:", err);
+        alert("Erro ao carregar a solução. Por favor, tente novamente.");
+      }
+    };
+    
+    if (id) {
+      fetchSolucao();
+    }
+  }, [id]);
+
   return (
     <div className="flex h-screen">
       <Sidebar isSidebarOpen={isSidebarOpen} />
       <ContadorToken />
       <div className="flex flex-col flex-1 p-4 bg-gray-100 dark:bg-gray-900 mr-64">
-        {/* Título como link para abrir o modal */}
         <header
           className="text-xl font-bold text-blue-600 dark:text-blue-400 mb-4 cursor-pointer hover:underline"
-          onClick={() => setIsModalOpen(true)} // Abre o modal ao clicar
+          onClick={() => setIsModalOpen(true)}
         >
-          Solução: Erro 404 no Sistema X
+          {solucao ? `Solução: ${solucao.titulo}` : "Carregando solução..."}
         </header>
 
-        {/* Modal */}
         <Modal
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)} // Fecha o modal
-          title="Solução: Erro 404 no Sistema X"
+          onClose={() => setIsModalOpen(false)}
+          title={solucao ? `Solução: ${solucao.titulo}` : "Carregando solução..."}
         >
           <p>
-            Esta é a descrição detalhada da tarefa relacionada ao erro 404 no Sistema X.
-            Aqui você pode adicionar informações adicionais sobre a solução, como etapas
-            para reproduzir o erro, soluções propostas e links úteis.
+            {solucao ? solucao.descricao : "Carregando descrição..."}
           </p>
         </Modal>
 
-        {/* Área de exibição de conteúdo */}
         <div className="flex-1 p-4 flex items-center justify-center bg-white dark:bg-gray-800 rounded-xl shadow-md">
           {selectedMedia.type === "video" ? (
             <iframe
@@ -89,6 +137,7 @@ export default function ConsultarSolucao() {
               src={selectedMedia.src}
               frameBorder="0"
               allowFullScreen
+              title="Player de vídeo"
             ></iframe>
           ) : selectedMedia.type === "pdf" ? (
             <object className="w-full h-full" data={selectedMedia.src} type="application/pdf">
@@ -101,7 +150,6 @@ export default function ConsultarSolucao() {
           )}
         </div>
 
-        {/* Área de comentários */}
         <div className="mt-4 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-md">
           <h2 className="text-lg font-semibold">Comentários</h2>
           <textarea 
@@ -127,7 +175,6 @@ export default function ConsultarSolucao() {
         </div>
       </div>
 
-      {/* Área de mídias da solução (fixa à direita) */}
       <aside className="w-64 p-4 bg-white dark:bg-gray-800 border-l border-gray-300 dark:border-gray-700 fixed right-0 h-full overflow-y-auto">
         <h2 className="text-lg font-bold mb-4">Mídias da Solução</h2>
         <div className="relative mb-4">
@@ -151,7 +198,10 @@ export default function ConsultarSolucao() {
             >
               {media.type === "video" ? <Play size={18} /> : media.type === "pdf" ? <FileText size={18} /> : <Globe size={18} />}
               <span>{media.title}</span>
-              <button onClick={() => toggleFavorite(media.id)} className="ml-auto">
+              <button onClick={(e) => {
+                e.stopPropagation();
+                toggleFavorite(media.id);
+              }} className="ml-auto">
                 <Star size={18} className={favorites.includes(media.id) ? "text-yellow-500" : "text-gray-400"} />
               </button>
             </div>

@@ -4,7 +4,8 @@ const Solucao = mongoose.model('Solucao', {
     titulo: String,
     descricao: String,
     categoria: String,
-    link: String
+    linkp: String,
+    linkv: String
 })
 
 module.exports = Solucao
