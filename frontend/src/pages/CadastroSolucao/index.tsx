@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AiOutlineLink, AiOutlineClose } from "react-icons/ai";
+
 import Sidebar from "../../components/Sidebar";
 import ContadorToken from "../../function/contadorToken";
 import { useNavigate } from "react-router-dom";
@@ -11,8 +11,8 @@ const CriacaoSolucao = () => {
   const [categoria, setCategoria] = useState("");
   const [linkp, setLinkp] = useState("");
   const [linkv, setLinkv] = useState("");
-  const [links, setLinks] = useState<string[]>([]);
-  const [currentLink, setCurrentLink] = useState("");
+  const [, setLinks] = useState<string[]>([]);
+  //const [currentLink, setCurrentLink] = useState("");
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [isSidebarOpen] = useState(false);
@@ -25,7 +25,7 @@ const CriacaoSolucao = () => {
     { value: "desempenho", label: "Desempenho" },
     { value: "seguranca", label: "Segurança" },
   ];
-
+/*
   const handleAddLink = (e: { key: string; preventDefault: () => void; }) => {
     if (e.key === " " || e.key === "Enter") {
       e.preventDefault();
@@ -35,10 +35,12 @@ const CriacaoSolucao = () => {
       }
     }
   };
-
+  */
+/*
   const removeLink = (indexToRemove: number) => {
     setLinks(links.filter((_, index) => index !== indexToRemove));
   };
+  */
 
   const handleSubmit = () => {
     if (!titulo || !descricao || !categoria ) {
