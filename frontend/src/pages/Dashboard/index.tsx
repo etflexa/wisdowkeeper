@@ -32,7 +32,7 @@ const Dashboard = () => {
             <FaBars />
           </button>
 
-          <h1 className="text-3xl font-semibold text-blue-600">Seja Bem - Vindo(a) Nome do usuário</h1>
+          <h1 className="text-3xl font-semibold text-blue-600">Seja Bem - Vindo(a) Eduardo</h1>
 
           {/* User Icon */}
           <div className="relative">

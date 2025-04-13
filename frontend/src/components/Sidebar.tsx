@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom"; // Importação para navegação
+import logoSideBar from "../assets/logosidebar.png"
 
 interface SidebarProps {
   isSidebarOpen: boolean;
@@ -13,8 +14,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen }) => {
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
       } lg:translate-x-0 fixed lg:relative`}
     >
-      <h2 className="text-3xl font-semibold mb-8">WisdowKeeper</h2>
-      <ul className="space-y-4">
+      
+      <img 
+  className=" max-w-[400px] mr-auto mb-8 mt-[-80px] ml-[-130px]" 
+  src={logoSideBar} 
+  alt="Wisdom Keeper Logo"
+/>
+      <ul className="space-y-4 mt-[-50px]">
         <li>
           <Link to="/dashboard" className="hover:bg-blue-500 p-2 rounded-lg block">
             Início

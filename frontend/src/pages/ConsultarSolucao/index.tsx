@@ -151,10 +151,10 @@ export default function ConsultarSolucao() {
         </div>
 
         <div className="mt-4 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-md">
-          <h2 className="text-lg font-semibold">Comentários</h2>
+          <h2 className="text-lg font-semibold">Feedbacks</h2>
           <textarea 
             className="w-full p-2 mt-2 rounded-lg border border-gray-300 dark:border-gray-700" 
-            placeholder="Deixe seu comentário..."
+            placeholder="Deixe seu feedback..."
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
           ></textarea>
