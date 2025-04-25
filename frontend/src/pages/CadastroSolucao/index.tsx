@@ -1,18 +1,25 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Sidebar from "../../components/Sidebar";
 import ContadorToken from "../../function/contadorToken";
 import { useNavigate } from "react-router-dom";
+
+interface UploadedFile {
+  name: string;
+  size: number;
+  type: string;
+  lastModified: number;
+}
 
 const CriacaoSolucao = () => {
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [categoria, setCategoria] = useState("");
-  const [linkp, setLinkp] = useState("");
   const [linkv, setLinkv] = useState("");
-  //const [, setLinks] = useState<string[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [isSidebarOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   const categorias = [
@@ -22,6 +29,19 @@ const CriacaoSolucao = () => {
     { value: "desempenho", label: "Desempenho" },
     { value: "seguranca", label: "Segurança" },
   ];
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      setUploadedFiles([...uploadedFiles, ...newFiles]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    const updatedFiles = [...uploadedFiles];
+    updatedFiles.splice(index, 1);
+    setUploadedFiles(updatedFiles);
+  };
 
   const handleSubmit = async () => {
     if (!titulo || !descricao || !categoria) {
@@ -33,17 +53,28 @@ const CriacaoSolucao = () => {
     
     try {
       const token = localStorage.getItem('jwt');
+      
+      // Criar FormData para enviar os arquivos
+      const formData = new FormData();
+      formData.append('titulo', titulo);
+      formData.append('descricao', descricao);
+      formData.append('categoria', categoria);
+      formData.append('linkv', linkv);
+      
+      // Adicionar cada arquivo ao FormData
+      uploadedFiles.forEach((file,) => {
+        formData.append(`arquivos`, file as unknown as Blob);
+      });
+
       const response = await fetch('https://wisdowkeeper-novatentativa.onrender.com/CadastrarSolucao', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}` 
+          // Não definir Content-Type, o navegador fará isso automaticamente com o boundary correto
         },
-        body: JSON.stringify({ titulo, descricao, categoria, linkp, linkv })
+        body: formData
       });
 
-      //const responseData = await response.json();
-      
       if (!response.ok) {
         if (response.status === 400) {
           alert("Preencha todos os campos");
@@ -58,8 +89,8 @@ const CriacaoSolucao = () => {
       setTitulo("");
       setDescricao("");
       setCategoria("");
-      setLinkp("");
       setLinkv("");
+      setUploadedFiles([]);
       navigate('/dashboard');
     } catch (error) {
       console.error("Erro na requisição:", error);
@@ -130,17 +161,56 @@ const CriacaoSolucao = () => {
               </div>
 
               <div>
-                <label className="block text-gray-700 mb-2 font-medium">Link do PDF</label>
-                <input
-                  type="url"
-                  className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition"
-                  placeholder="https://exemplo.com/documento.pdf"
-                  value={linkp}
-                  onChange={(e) => setLinkp(e.target.value)}
-                />
+                <label className="block text-gray-700 mb-2 font-medium">Arquivos</label>
+                <div 
+                  className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition cursor-pointer hover:bg-gray-50"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <div className="text-center text-gray-500">
+                    <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <p>Clique para adicionar arquivos</p>
+                    <p className="text-xs mt-1">Arraste e solte arquivos aqui ou clique para selecionar</p>
+                  </div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    onChange={handleFileChange}
+                    multiple
+                  />
+                </div>
               </div>
             </div>
           </div>
+
+          {/* Lista de arquivos */}
+          {uploadedFiles.length > 0 && (
+            <div className="mt-4">
+              <h3 className="text-gray-700 mb-2 font-medium">Arquivos selecionados:</h3>
+              <ul className="border rounded-lg divide-y divide-gray-200">
+                {uploadedFiles.map((file, index) => (
+                  <li key={index} className="p-3 flex justify-between items-center">
+                    <div className="flex items-center">
+                      <svg className="h-5 w-5 text-gray-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-gray-700">{file.name}</span>
+                    </div>
+                    <button
+                      onClick={() => removeFile(index)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Descrição - Ocupa largura total */}
           <div className="mt-6">

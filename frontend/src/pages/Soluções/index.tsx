@@ -4,102 +4,51 @@ import Sidebar from "../../components/Sidebar";
 import axios from 'axios';
 import ContadorToken from "../../function/contadorToken";
 
-
-
-
-
 type Solucao = {
   _id: string;
   titulo: string;
   categoria: string;
- 
+  ativo?: boolean; // Adicionado como opcional para não quebrar o código existente
 };
-
 
 const Solucoes = () => {
   const [isSidebarOpen] = useState(false);
-  
-  // Aplicando o tipo ao useState
- // const [usuarios, setUsuarios] = useState<Usuario[]>([]); // Agora o estado é um array de User
-  const [solucoes, setSolucoes] = useState<Solucao[]>([]); // Agora o estado é um array de User
+  const [solucoes, setSolucoes] = useState<Solucao[]>([]);
   const [search, setSearch] = useState("");
-  //const [filterRole, setFilterRole] = useState(""); // Novo filtro por função
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5; // Paginação
+  const itemsPerPage = 5;
   const navigate = useNavigate();
+
   const handleEditarClick = (id: string) => {
-    
-   
     navigate(`/consultarsolucao`, { state: { id } });
   };
- 
-  const handleDelete = (_id: string, titulo: string) => {
-    const resposta = window.confirm("excluir usuario "+titulo+"?");
-    if (resposta) {
 
-        console.log("Usuário confirmou.");
-        async function remover(){
-          const token = localStorage.getItem('jwt');
-      
-          const response = await  fetch('https://wisdowkeeper-novatentativa.onrender.com/removerSolucao', {
-            
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json', // Define o tipo de conteúdo como JSON
-                'Authorization': `Bearer ${token}` 
-            },
-            body: JSON.stringify({
-                _id : _id
-            }) // Converte os dados do formulário em JSON
-        })
-          if (!response.ok) {
-                       
-            if (response.status === 400) {
-              alert("Faça login para remover usuário" );
-              navigate('/usuarios')
-            } 
-            if (response.status === 404) {
-              alert("Usuario não encontrado" );
-              
-            } 
-            
-            if (response.status === 500) {
-              alert("erro ao remover" );
-              
-              
-            } 
-            
-        
-            throw new Error(`Erro: ${response.status} - ${response.statusText}`);
-    
-          }
-          if(response.ok){
-            alert("Solução removida!" );
-            navigate('/Dashboard')
-            
-          }
-         
-
-        }
-        remover();
-   
-    } 
+  // Função para alternar o status localmente
+  const toggleStatus = (_id: string) => {
+    setSolucoes(solucoes.map(solucao => 
+      solucao._id === _id 
+        ? { ...solucao, ativo: !solucao.ativo } 
+        : solucao
+    ));
   };
+
   // Simulação de usuários
   useEffect(() => {
     const fetchSolucoes = async () => {
-    
-      
-      // Adiciona o evento de clique no botão
-     
       const token = localStorage.getItem('jwt');
       const response = await axios.get<Solucao[]>('https://wisdowkeeper-novatentativa.onrender.com/getSolucoes', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-     
-      setSolucoes(response.data);
+      
+      // Inicializa o status ativo como true para todas as soluções
+      const solucoesComStatus = response.data.map(solucao => ({
+        ...solucao,
+        ativo: solucao.ativo !== undefined ? solucao.ativo : true
+      }));
+      
+      setSolucoes(solucoesComStatus);
     };
     fetchSolucoes();
   }, []);
@@ -110,7 +59,6 @@ const Solucoes = () => {
       (user.titulo.toLowerCase().includes(search.toLowerCase()) ||
         user.categoria.toLowerCase().includes(search.toLowerCase()))
   );
-
 
   // Paginação
   const totalPages = Math.ceil(filteredUsuarios.length / itemsPerPage);
@@ -141,12 +89,11 @@ const Solucoes = () => {
         <div className="flex gap-4 mb-4">
           <input
             type="text"
-            placeholder="Buscar usuário..."
+            placeholder="Buscar solução..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full p-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-        
         </div>
 
         {/* Tabela de usuários */}
@@ -156,7 +103,7 @@ const Solucoes = () => {
               <tr>
                 <th className="p-3 text-left">Titulo</th>
                 <th className="p-3 text-left">Categoria</th>   
-                <th className="p-3 text-left"></th>               
+                <th className="p-3 text-left">Status</th>               
                 <th className="p-3 text-left">Ações</th>
               </tr>
             </thead>
@@ -171,18 +118,35 @@ const Solucoes = () => {
                       {user.titulo}
                     </td>
                     <td className="p-3">{user.categoria}</td>
-                    <td className="p-3"></td>
-                   
+                    <td className="p-3">
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        user.ativo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {user.ativo ? 'Ativo' : 'Inativo'}
+                      </span>
+                    </td>
                     <td className="p-3 flex gap-2">
-                      <button onClick={() => handleEditarClick(user._id)} className="bg-yellow-500 text-white px-3 py-1 rounded-md">Visualizar</button>
-                      <button onClick={() => handleDelete(user._id, user.titulo)} className="bg-red-600 text-white px-3 py-1 rounded-md">Excluir</button>
+                      <button 
+                        onClick={() => handleEditarClick(user._id)} 
+                        className="bg-yellow-500 text-white px-3 py-1 rounded-md"
+                      >
+                        Visualizar
+                      </button>
+                      <button 
+                        onClick={() => toggleStatus(user._id)}
+                        className={`px-3 py-1 rounded-md ${
+                          user.ativo ? 'bg-green-600 text-white' : 'bg-gray-400 text-gray-800'
+                        }`}
+                      >
+                        {user.ativo ? 'Desativar' : 'Ativar'}
+                      </button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
                   <td colSpan={5} className="text-center p-4 text-gray-500">
-                    Nenhuma solução encontrado
+                    Nenhuma solução encontrada
                   </td>
                 </tr>
               )}

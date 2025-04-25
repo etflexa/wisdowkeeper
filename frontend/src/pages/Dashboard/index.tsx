@@ -1,21 +1,54 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Importando useNavigate
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { FaUserCircle, FaBars } from "react-icons/fa";
-import Sidebar from "../../components/Sidebar"
+import Sidebar from "../../components/Sidebar";
 import ContadorToken from "../../function/contadorToken";
+import axios from 'axios';
 
 const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const navigate = useNavigate(); // Hook para navegação
+  const [userName, setUserName] = useState("Usuário");
+  const navigate = useNavigate();
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
-  // Função de logout
+  useEffect(() => {
+    const fetchUserName = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        
+        if (token) {
+          // Decodifica o token manualmente
+          const base64Url = token.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const decodedPayload = JSON.parse(atob(base64));
+          
+          // Faz uma chamada para obter os dados completos do usuário
+          const response = await axios.get(`https://wisdowkeeper-novatentativa.onrender.com/user/${decodedPayload.id}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          
+          if (response.data.user && response.data.user.nome) {
+            setUserName(response.data.user.nome);
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao obter nome do usuário:", error);
+        // Fallback caso ocorra algum erro
+        setUserName("Usuário");
+      }
+    };
+
+    fetchUserName();
+  }, []);
+
   const handleLogout = () => {
-    localStorage.removeItem("token"); // Remove o token do usuário
-    navigate("/login"); // Redireciona para a tela de login
+    localStorage.removeItem("token");
+    navigate("/login");
   };
 
   return (
@@ -32,7 +65,7 @@ const Dashboard = () => {
             <FaBars />
           </button>
 
-          <h1 className="text-3xl font-semibold text-blue-600">Seja Bem - Vindo(a) Eduardo</h1>
+          <h1 className="text-3xl font-semibold text-blue-600">Seja Bem-Vindo(a) {userName}</h1>
 
           {/* User Icon */}
           <div className="relative">

@@ -4,100 +4,43 @@ import Sidebar from "../../components/Sidebar";
 import axios from 'axios';
 import ContadorToken from "../../function/contadorToken";
 
-
-
-
 // Definir o tipo do usuário
 type Usuario = {
   id: number;
   nome: string;
   email: string;
-  perfil: string
+  perfil: string;
+  ativo?: boolean; // Adicionado campo para controle de status
 };
-
-
 
 const Usuarios = () => {
   const [isSidebarOpen] = useState(false);
-  
-  // Aplicando o tipo ao useState
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]); // Agora o estado é um array de User
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [search, setSearch] = useState("");
-  const [filterRole, setFilterRole] = useState(""); // Novo filtro por função
+  const [filterRole, setFilterRole] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5; // Paginação
+  const itemsPerPage = 5;
   const navigate = useNavigate();
 
   const handleEditarClick = (email: string, nome: string) => {
     const resposta = window.confirm("Editar usuario "+nome+"?");
     if(resposta){
-      navigate(`/editarcadastro`, { state: { email } }); // Redireciona para a página de edição com o ID do usuário
-
+      navigate(`/editarcadastro`, { state: { email } });
     }
   };
 
-
-  const handleDelete = (email: string, nome: string) => {
-    const resposta = window.confirm("excluir usuario "+nome+"?");
-    if (resposta) {
-
-        console.log("Usuário confirmou.");
-        async function remover(){
-          const token = localStorage.getItem('jwt');
-      
-          const response = await  fetch('https://wisdowkeeper-novatentativa.onrender.com/removeUser', {
-            
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json', // Define o tipo de conteúdo como JSON
-                'Authorization': `Bearer ${token}` 
-            },
-            body: JSON.stringify({
-                email : email
-            }) // Converte os dados do formulário em JSON
-        })
-          if (!response.ok) {
-                       
-            if (response.status === 400) {
-              alert("Faça login para remover usuário" );
-              navigate('/usuarios')
-            } 
-            if (response.status === 404) {
-              alert("Usuario não encontrado" );
-              
-            } 
-            
-            if (response.status === 500) {
-              alert("erro ao remover" );
-              
-              
-            } 
-            
-        
-            throw new Error(`Erro: ${response.status} - ${response.statusText}`);
-    
-          }
-          if(response.ok){
-            alert("Usuario removido" );
-            navigate('/usuarios')
-            
-          }
-         
-
-        }
-        remover();
-   
-    } 
+  // Função para alternar o status localmente
+  const toggleStatus = (email: string) => {
+    setUsuarios(usuarios.map(usuario => 
+      usuario.email === email 
+        ? { ...usuario, ativo: !usuario.ativo } 
+        : usuario
+    ));
   };
- 
 
   // Simulação de usuários
   useEffect(() => {
     const fetchUsuarios = async () => {
-    
-      
-      // Adiciona o evento de clique no botão
-     
       const token = localStorage.getItem('jwt');
       const response = await axios.get<Usuario[]>('https://wisdowkeeper-novatentativa.onrender.com/getUsers', {
         headers: {
@@ -105,10 +48,13 @@ const Usuarios = () => {
         }
       });
 
-
-
-     
-      setUsuarios(response.data);
+      // Inicializa o status ativo como true para todos os usuários
+      const usuariosComStatus = response.data.map(usuario => ({
+        ...usuario,
+        ativo: usuario.ativo !== undefined ? usuario.ativo : true
+      }));
+      
+      setUsuarios(usuariosComStatus);
     };
     fetchUsuarios();
   }, []);
@@ -119,7 +65,6 @@ const Usuarios = () => {
       (user.nome.toLowerCase().includes(search.toLowerCase()) ||
         user.email.toLowerCase().includes(search.toLowerCase()))
   );
-
 
   // Paginação
   const totalPages = Math.ceil(filteredUsuarios.length / itemsPerPage);
@@ -191,11 +136,27 @@ const Usuarios = () => {
                     <td className="p-3">{user.email}</td>
                     <td className="p-3">{user.perfil}</td>
                     <td className="p-3">
-                      Ativo
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        user.ativo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {user.ativo ? 'Ativo' : 'Inativo'}
+                      </span>
                     </td>
                     <td className="p-3 flex gap-2">
-                      <button onClick={() => handleEditarClick(user.email, user.nome)} className="bg-yellow-500 text-white px-3 py-1 rounded-md">Editar</button>
-                      <button onClick={() => handleDelete(user.email, user.nome)}  className="bg-red-600 text-white px-3 py-1 rounded-md">Excluir</button>
+                      <button 
+                        onClick={() => handleEditarClick(user.email, user.nome)} 
+                        className="bg-yellow-500 text-white px-3 py-1 rounded-md"
+                      >
+                        Editar
+                      </button>
+                      <button 
+                        onClick={() => toggleStatus(user.email)}
+                        className={`px-3 py-1 rounded-md ${
+                          user.ativo ? 'bg-green-600 text-white' : 'bg-gray-400 text-gray-800'
+                        }`}
+                      >
+                        {user.ativo ? 'Desativar' : 'Ativar'}
+                      </button>
                     </td>
                   </tr>
                 ))
