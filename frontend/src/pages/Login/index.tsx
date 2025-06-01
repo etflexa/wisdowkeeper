@@ -56,7 +56,7 @@ function Login() {
        
 
           // Faz a requisição GET para buscar os dados do usuário
-          const userResponse = await fetch(`https://wisdowkeeper-novatentativa.onrender.com/api/usuario/${userId}`, {
+          const userResponse = await fetch(`http://localhost:3000/api/usuario/${userId}`, {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
