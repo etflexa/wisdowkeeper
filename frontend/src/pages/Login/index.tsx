@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import logoLogin from "../../assets/login_logo.png";
+import { jwtDecode } from "jwt-decode"; // ✅ Importação corrigida
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -30,8 +31,13 @@ function Login() {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
+      interface JwtPayload {
+        id: string;
+        // adicione mais campos conforme necessário
+      }
+
       try {
-        const response = await fetch('https://wisdowkeeper-novatentativa.onrender.com/login', {
+        const response = await fetch('http://localhost:3000/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password }),
@@ -39,8 +45,33 @@ function Login() {
 
         if (response.ok) {
           const data = await response.json();
-          localStorage.setItem('jwt', data.token);
-          navigate('/dashboard');
+          const token = data.token;
+
+          localStorage.setItem('jwt', token);
+          console.log(token)
+
+          // Decodifica o JWT para obter o ID do usuário
+          const decoded: JwtPayload = jwtDecode(token); // ✅ Uso corrigido
+          const userId = decoded.id;
+       
+
+          // Faz a requisição GET para buscar os dados do usuário
+          const userResponse = await fetch(`http://localhost:3000/api/usuario/${userId}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}` // se a API exigir autenticação
+            },
+          });
+
+          if (userResponse.ok) {
+            //userData contem os dados do usuario vinos do backend
+            const userData = await userResponse.json();
+            console.log("Dados do usuário:", userData);
+            navigate('/dashboard');
+          } else {
+            console.error("Erro ao buscar os dados do usuário.");
+          }
         } else {
           alert("Usuário ou senha incorretos");
         }
@@ -59,7 +90,7 @@ function Login() {
       {/* Lado esquerdo - Logo */}
       <div className="hidden md:flex md:w-1/2 bg-white-50 items-center justify-center p-8 ml-6">
         <div className="max-w-full max-h-full flex items-center justify-center">
-          <img 
+          <img
             src={logoLogin}
             alt="Logo Wisdom Keeper"
             className="object-contain w-auto h-auto max-w-full max-h-[80vh]"

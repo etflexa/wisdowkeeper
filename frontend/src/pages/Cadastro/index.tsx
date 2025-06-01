@@ -87,7 +87,7 @@ const Cadastro = () => {
     if (validate()) {
       const token = localStorage.getItem('jwt');
       try{
-      const response = await  fetch('https://wisdowkeeper-novatentativa.onrender.com/cadastro', {
+      const response = await  fetch('http://localhost:3000/api/cadastro', {
         
         method: 'POST',
         headers: {

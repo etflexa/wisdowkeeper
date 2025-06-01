@@ -6,11 +6,11 @@ import ContadorToken from "../../function/contadorToken";
 
 // Definir o tipo do usuário
 type Usuario = {
-  id: number;
+  _id: string;
   nome: string;
   email: string;
   perfil: string;
-  ativo?: boolean; // Adicionado campo para controle de status
+  ativo: boolean;
 };
 
 const Usuarios = () => {
@@ -23,47 +23,102 @@ const Usuarios = () => {
   const navigate = useNavigate();
 
   const handleEditarClick = (email: string, nome: string) => {
-    const resposta = window.confirm("Editar usuario "+nome+"?");
-    if(resposta){
+    const resposta = window.confirm("Editar usuário " + nome + "?");
+    if (resposta) {
       navigate(`/editarcadastro`, { state: { email } });
     }
   };
 
-  // Função para alternar o status localmente
-  const toggleStatus = (email: string) => {
-    setUsuarios(usuarios.map(usuario => 
-      usuario.email === email 
-        ? { ...usuario, ativo: !usuario.ativo } 
-        : usuario
-    ));
-  };
-
-  // Simulação de usuários
-  useEffect(() => {
-    const fetchUsuarios = async () => {
+  // Função reutilizável para buscar usuários
+  const fetchUsuarios = async () => {
+    try {
       const token = localStorage.getItem('jwt');
-      const response = await axios.get<Usuario[]>('https://wisdowkeeper-novatentativa.onrender.com/getUsers', {
+      const response = await axios.get<Usuario[]>('http://localhost:3000/api/usuarios', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
+      console.log(response.data)
+      const usuarios = response.data as Usuario[]; // Supondo que 'response.data' seja um array de usuários
 
-      // Inicializa o status ativo como true para todos os usuários
-      const usuariosComStatus = response.data.map(usuario => ({
-        ...usuario,
-        ativo: usuario.ativo !== undefined ? usuario.ativo : true
-      }));
-      
-      setUsuarios(usuariosComStatus);
-    };
+      // Mapeando o array de usuários para gerar um novo com 'ativo' como booleano
+      const usuariosAtualizados = usuarios.map(usuario => {
+        return {
+          ...usuario,
+          ativo: typeof usuario.ativo === 'boolean' ? usuario.ativo : false,
+        };
+      });
+
+      setUsuarios(usuariosAtualizados);
+    } catch (error) {
+      console.error("Erro ao buscar usuários:", error);
+      alert("Não foi possível carregar os usuários.");
+    }
+  };
+
+  // UseEffect que chama o fetch na montagem
+  useEffect(() => {
     fetchUsuarios();
   }, []);
 
-  // Filtrando usuários por nome, email ou função
+  // Atualiza status do usuário
+  const toggleStatus = async (email: string, status: boolean) => {
+    const confirmacao = window.confirm(`Tem certeza que deseja alterar o status do usuário ${email}?`);
+    if (!confirmacao) return;
+
+    if(status==true){
+      try {
+        const token = localStorage.getItem('jwt');
+        await axios.post(
+          'http://localhost:3000/api/removerUsuario',
+          { email },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+  
+        navigate(0);
+      } catch (error) {
+        console.error("Erro ao alterar status do usuário:", error);
+        alert("Ocorreu um erro ao alterar o status do usuário.");
+      }
+
+    }else if(status==false){
+      try {
+        const token = localStorage.getItem('jwt');
+        await axios.post(
+          'http://localhost:3000/api/ativarUsuario',
+          { email },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+  
+        navigate(0);
+      } catch (error) {
+        console.error("Erro ao alterar status do usuário:", error);
+        alert("Ocorreu um erro ao alterar o status do usuário.");
+      }
+
+    }
+  
+    
+
+
+
+
+  };
+
+  // Filtro por nome/email/função
   const filteredUsuarios = usuarios.filter(
     (user) =>
       (user.nome.toLowerCase().includes(search.toLowerCase()) ||
-        user.email.toLowerCase().includes(search.toLowerCase()))
+        user.email.toLowerCase().includes(search.toLowerCase())) &&
+      (filterRole === "" || user.perfil === filterRole)
   );
 
   // Paginação
@@ -75,11 +130,9 @@ const Usuarios = () => {
 
   return (
     <div className="min-h-screen flex bg-gray-100">
-      {/* Sidebar */}
       <Sidebar isSidebarOpen={isSidebarOpen} />
-      <ContadorToken/>
+      <ContadorToken />
 
-      {/* Conteúdo principal */}
       <div className="flex-1 p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-semibold text-blue-600">Usuários</h1>
@@ -126,7 +179,7 @@ const Usuarios = () => {
             <tbody>
               {paginatedUsuarios.length > 0 ? (
                 paginatedUsuarios.map((user) => (
-                  <tr key={user.id} className="border-b hover:bg-gray-100">
+                  <tr key={user._id} className="border-b hover:bg-gray-100">
                     <td className="p-3 flex items-center gap-2">
                       <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
                         {user.nome.charAt(0)}
@@ -143,14 +196,14 @@ const Usuarios = () => {
                       </span>
                     </td>
                     <td className="p-3 flex gap-2">
-                      <button 
-                        onClick={() => handleEditarClick(user.email, user.nome)} 
+                      <button
+                        onClick={() => handleEditarClick(user.email, user.nome)}
                         className="bg-yellow-500 text-white px-3 py-1 rounded-md"
                       >
                         Editar
                       </button>
-                      <button 
-                        onClick={() => toggleStatus(user.email)}
+                      <button
+                        onClick={() => toggleStatus(user.email, user.ativo)}
                         className={`px-3 py-1 rounded-md ${
                           user.ativo ? 'bg-green-600 text-white' : 'bg-gray-400 text-gray-800'
                         }`}

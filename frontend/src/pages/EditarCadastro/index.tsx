@@ -31,7 +31,7 @@ const EditarCadastro = () => {
       const token = localStorage.getItem('jwt');
      
       try {
-        const response = await fetch('https://wisdowkeeper-novatentativa.onrender.com/buscarUsuario', {
+        const response = await fetch('http://localhost:3000/api/buscarUsuario', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json', // Define que o corpo será em JSON4
@@ -109,7 +109,7 @@ const EditarCadastro = () => {
     if (validate()) {
       const token = localStorage.getItem('jwt');
       try {
-        const response = await fetch(`https://wisdowkeeper-novatentativa.onrender.com/editarUsuario`, {
+        const response = await fetch(`http://localhost:3000/api/editarUsuario`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

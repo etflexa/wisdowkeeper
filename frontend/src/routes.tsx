@@ -9,6 +9,7 @@ import Solucoes from './pages/Soluções/index';
 import ConsultarSolucao from './pages/ConsultarSolucao/index';
 import CategorizarSolucoes from "./pages/CategorizarSolucoes";
 import Login from './pages/Login/index';
+import RecuperacaoConta from './pages/recuperarConta/index';
 
 
 function MainRoutes() {
@@ -25,6 +26,7 @@ function MainRoutes() {
       <Route path="/CadastrarSolucao" element={<CadastroSolucao />} />
       <Route path="/categorizarSolucoes" element={<CategorizarSolucoes />} />
       <Route path="/usuarios" element={<Usuarios />} />
+      <Route path="/recuperarConta" element={<RecuperacaoConta />} />
       <Route path="*" element={<Navigate to="/" />} />
 
     </Routes>

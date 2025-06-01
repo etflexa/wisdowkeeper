@@ -66,7 +66,7 @@ const CriacaoSolucao = () => {
         formData.append(`arquivos`, file as unknown as Blob);
       });
 
-      const response = await fetch('https://wisdowkeeper-novatentativa.onrender.com/CadastrarSolucao', {
+      const response = await fetch('http://localhost:3000/api/cadastrarSolucao', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}` 

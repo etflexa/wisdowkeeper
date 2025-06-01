@@ -72,7 +72,7 @@ export default function ConsultarSolucao() {
     const fetchSolucao = async () => {
       const token = localStorage.getItem('jwt');
       try {
-        const response = await axios.post<Solucao>('https://wisdowkeeper-novatentativa.onrender.com/getSolucao', 
+        const response = await axios.post<Solucao>('http://localhost:3000/api/solucao', 
           { id },  // Enviando o ID no corpo da requisição
           {
             headers: {

@@ -41,7 +41,7 @@ const ContadorToken = () => {
   const handleStayLoggedIn = async () => {
     const token = localStorage.getItem("jwt");
     try {
-      const response = await fetch("https://wisdowkeeper-novatentativa.onrender.com/refresh", {
+      const response = await fetch("http://localhost:3000//api/refresh", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
@@ -69,7 +69,7 @@ const ContadorToken = () => {
 
   // Inicia o intervalo de verificação
   useEffect(() => {
-    const intervalId = setInterval(checkTokenExpiration, 30000); // Verifica a cada 30 segundos
+    const intervalId = setInterval(checkTokenExpiration, 60000); // Verifica a cada 30 segundos
     return () => clearInterval(intervalId); // Limpa o intervalo ao desmontar
   }, []);
 
