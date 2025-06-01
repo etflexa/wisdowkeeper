@@ -5,11 +5,7 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 app.use(express.urlencoded({ extended: true }));
-app.use(cors({
-  origin: ['http://localhost:3000', 'https://seu-frontend.com'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(cors());
 app.use(express.json());
 
 const authRoutes = require('./routes/authRoutes');
