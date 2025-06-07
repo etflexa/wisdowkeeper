@@ -36,7 +36,7 @@ const Solucoes = () => {
   useEffect(() => {
     const fetchSolucoes = async () => {
       const token = localStorage.getItem('jwt');
-      const response = await axios.get<Solucao[]>('http://localhost:3000/api/solucoes', {
+      const response = await axios.get<Solucao[]>('https://wisdowkeeper-novatentativa.onrender.com/api/solucoes', {
         headers: {
           'Authorization': `Bearer ${token}`
         }

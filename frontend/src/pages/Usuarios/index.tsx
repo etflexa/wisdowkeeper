@@ -33,7 +33,7 @@ const Usuarios = () => {
   const fetchUsuarios = async () => {
     try {
       const token = localStorage.getItem('jwt');
-      const response = await axios.get<Usuario[]>('http://localhost:3000/api/usuarios', {
+      const response = await axios.get<Usuario[]>('https://wisdowkeeper-novatentativa.onrender.com/api/usuarios', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -70,7 +70,7 @@ const Usuarios = () => {
       try {
         const token = localStorage.getItem('jwt');
         await axios.post(
-          'http://localhost:3000/api/removerUsuario',
+          'https://wisdowkeeper-novatentativa.onrender.com/api/removerUsuario',
           { email },
           {
             headers: {
@@ -89,7 +89,7 @@ const Usuarios = () => {
       try {
         const token = localStorage.getItem('jwt');
         await axios.post(
-          'http://localhost:3000/api/ativarUsuario',
+          'https://wisdowkeeper-novatentativa.onrender.com/api/ativarUsuario',
           { email },
           {
             headers: {

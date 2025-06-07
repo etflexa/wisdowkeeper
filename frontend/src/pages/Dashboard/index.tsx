@@ -39,7 +39,7 @@ const Dashboard = () => {
           console.log("Token decodificado:", decodedPayload);
           
           // Faz uma chamada para obter os dados completos do usuário
-          const response = await axios.get(`http://localhost:3000/api/usuario/${decodedPayload.id}`, {
+          const response = await axios.get(`https://wisdowkeeper-novatentativa.onrender.com/api/usuario/${decodedPayload.id}`, {
             headers: {
               'Authorization': `Bearer ${token}`
             }
