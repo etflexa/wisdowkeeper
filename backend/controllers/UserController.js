@@ -118,7 +118,7 @@ async editarUsuario(req, res) {
 
   async login(req, res) {
     const { email, password } = req.body;
-    console.log('Dados recebidos:', email, password);
+ console.log(email,password);
 
     if (!email || !password)
       return res.status(422).json({ msg: 'Email e senha são obrigatórios' });
@@ -126,7 +126,7 @@ async editarUsuario(req, res) {
     try {
       const user = await User.findOne({ email });
       if (!user || !user.ativo) return res.status(404).json({ msg: 'Usuário não encontrado!' });
-    const passwordMatches = await bcrypt.compare(password, user.password);
+const passwordMatches = password === user.password;
       if (!passwordMatches) return res.status(422).json({ msg: 'Senha inválida' });
 
       const secret = process.env.SECRET;
