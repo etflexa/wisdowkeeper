@@ -116,11 +116,6 @@ const CategorizarSolucoes = () => {
     try {
       setIsLoading(true);
       setError("");
-      
-      const response = await api.post(
-        `/solutions/categories/enterprises/${enterpriseId}`,
-        { name: novaCategoria }
-      );
 
       // Atualiza a lista após adicionar
       await fetchCategorias();
