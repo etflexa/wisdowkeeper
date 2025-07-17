@@ -1,22 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaUserCircle, FaBars } from "react-icons/fa";
 import Sidebar from "../../components/Sidebar";
 import ContadorToken from "../../function/contadorToken";
-import axios from 'axios';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 
-const Dashboard = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [userName, setUserName] = useState("Usuário");
-  const navigate = useNavigate();
-
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-  const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
-
-  ChartJS.register(
+ChartJS.register(
   CategoryScale,
   LinearScale,
   PointElement,
@@ -26,44 +16,25 @@ const Dashboard = () => {
   Legend
 );
 
-  useEffect(() => {
-    const fetchUserName = async () => {
-      try {
-        const token = localStorage.getItem("jwt");
-        
-        if (token) {
-          // Decodifica o token manualmente
-          const base64Url = token.split('.')[1];
-          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-          const decodedPayload = JSON.parse(atob(base64));
-          console.log("Token decodificado:", decodedPayload);
-          
-          // Faz uma chamada para obter os dados completos do usuário
-          const response = await axios.get(`https://wisdowkeeper-novatentativa.onrender.com/api/usuario/${decodedPayload.id}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
+const Dashboard = () => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const navigate = useNavigate();
 
-           console.log("Resposta da API:", response.data);
-          
-         if (response.data.nome) { // Se a API retornar direto no data
-            setUserName(response.data.nome);
-          }
-        }
-      } catch (error) {
-        console.error("Erro ao obter nome do usuário:", error);
-        
-        // Fallback caso ocorra algum erro
-        setUserName("Usuário");
-      }
-    };
+  // Obtém o nome do usuário do localStorage
+  const enterpriseData = localStorage.getItem("enterprise");
+  const userName = enterpriseData ? JSON.parse(enterpriseData).name : "Empresa";
 
-    fetchUserName();
-  }, []);
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    // Remove todos os dados de autenticação
+    localStorage.removeItem("jwt");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("enterprise");
+    localStorage.removeItem("enterpriseDetails");
+    
     navigate("/login");
   };
 
@@ -110,48 +81,48 @@ const Dashboard = () => {
         <div className="p-6 flex-1">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Visão Geral */}
-<div className="bg-white p-6 rounded-lg shadow-lg col-span-1 lg:col-span-2">
-  <h2 className="text-2xl font-semibold text-blue-600 mb-4">Visão Geral</h2>
-  <p className="text-gray-600 mb-6">Resumo das principais atividades e métricas.</p>
-  <div className="bg-blue-50 p-4 rounded-lg shadow-sm h-96 mb-4">
-    <h3 className="text-lg text-blue-600 font-medium">Acessos Mensais</h3>
-    <div className="h-80 mt-4">
-      <Line 
-        data={{
-          labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
-          datasets: [
-            {
-              label: 'Acessos em 2024',
-              data: [65, 59, 80, 81, 56, 55, 40, 72, 88, 94, 100, 120],
-              borderColor: 'rgb(59, 130, 246)',
-              backgroundColor: 'rgba(59, 130, 246, 0.5)',
-              tension: 0.3,
-              fill: true
-            }
-          ]
-        }}
-        options={{
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'top',
-            },
-            tooltip: {
-              mode: 'index',
-              intersect: false,
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          }
-        }}
-      />
-    </div>
-  </div>
-</div>
+            <div className="bg-white p-6 rounded-lg shadow-lg col-span-1 lg:col-span-2">
+              <h2 className="text-2xl font-semibold text-blue-600 mb-4">Visão Geral</h2>
+              <p className="text-gray-600 mb-6">Resumo das principais atividades e métricas.</p>
+              <div className="bg-blue-50 p-4 rounded-lg shadow-sm h-96 mb-4">
+                <h3 className="text-lg text-blue-600 font-medium">Acessos Mensais</h3>
+                <div className="h-80 mt-4">
+                  <Line 
+                    data={{
+                      labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+                      datasets: [
+                        {
+                          label: 'Acessos em 2024',
+                          data: [65, 59, 80, 81, 56, 55, 40, 72, 88, 94, 100, 120],
+                          borderColor: 'rgb(59, 130, 246)',
+                          backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                          tension: 0.3,
+                          fill: true
+                        }
+                      ]
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          position: 'top',
+                        },
+                        tooltip: {
+                          mode: 'index',
+                          intersect: false,
+                        }
+                      },
+                      scales: {
+                        y: {
+                          beginAtZero: true
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
 
             {/* Soluções Recentes */}
             <div className="bg-white p-6 rounded-lg shadow-lg">

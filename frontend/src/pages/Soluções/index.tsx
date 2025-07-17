@@ -8,7 +8,7 @@ type Solucao = {
   _id: string;
   titulo: string;
   categoria: string;
-  ativo?: boolean; // Adicionado como opcional para não quebrar o código existente
+  ativo?: boolean;
 };
 
 const Solucoes = () => {
@@ -16,6 +16,7 @@ const Solucoes = () => {
   const [solucoes, setSolucoes] = useState<Solucao[]>([]);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [userProfile, setUserProfile] = useState("");
   const itemsPerPage = 5;
   const navigate = useNavigate();
 
@@ -23,7 +24,6 @@ const Solucoes = () => {
     navigate(`/consultarsolucao`, { state: { id } });
   };
 
-  // Função para alternar o status localmente
   const toggleStatus = (_id: string) => {
     setSolucoes(solucoes.map(solucao => 
       solucao._id === _id 
@@ -32,48 +32,66 @@ const Solucoes = () => {
     ));
   };
 
-  // Simulação de usuários
   useEffect(() => {
-    const fetchSolucoes = async () => {
+    const fetchData = async () => {
       const token = localStorage.getItem('jwt');
-      const response = await axios.get<Solucao[]>('https://wisdowkeeper-novatentativa.onrender.com/api/solucoes', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      // Inicializa o status ativo como true para todas as soluções
-      const solucoesComStatus = response.data.map(solucao => ({
-        ...solucao,
-        ativo: solucao.ativo !== undefined ? solucao.ativo : true
-      }));
-      
-      setSolucoes(solucoesComStatus);
+      if (!token) return;
+
+      try {
+        // Decodifica o token para extrair o ID do usuário
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const decodedPayload = JSON.parse(atob(base64));
+        const userId = decodedPayload.id;
+
+        // Busca o perfil do usuário
+        const userResponse = await axios.get(`http://localhost:3000/api/usuario/${userId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        setUserProfile(userResponse.data.perfil);
+
+        // Busca as soluções
+        const solucoesResponse = await axios.get<Solucao[]>('http://localhost:3000/api/solucoes', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const solucoesComStatus = solucoesResponse.data.map(solucao => ({
+          ...solucao,
+          ativo: solucao.ativo !== undefined ? solucao.ativo : true
+        }));
+
+        setSolucoes(solucoesComStatus);
+      } catch (error) {
+        console.error("Erro ao buscar dados:", error);
+      }
     };
-    fetchSolucoes();
+
+    fetchData();
   }, []);
 
-  // Filtrando usuários por nome, email ou função
   const filteredUsuarios = solucoes.filter(
     (user) =>
-      (user.titulo.toLowerCase().includes(search.toLowerCase()) ||
-        user.categoria.toLowerCase().includes(search.toLowerCase()))
+      user.titulo.toLowerCase().includes(search.toLowerCase()) ||
+      user.categoria.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Paginação
   const totalPages = Math.ceil(filteredUsuarios.length / itemsPerPage);
   const paginatedUsuarios = filteredUsuarios.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
+  const shouldShowToggleButton = !["Estagiário", "Desenvolvedor"].includes(userProfile);
+
   return (
     <div className="min-h-screen flex bg-gray-100">
-      {/* Sidebar */}
       <Sidebar isSidebarOpen={isSidebarOpen} />
-      <ContadorToken/>
+      <ContadorToken />
 
-      {/* Conteúdo principal */}
       <div className="flex-1 p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-semibold text-blue-600">Soluções</h1>
@@ -85,7 +103,6 @@ const Solucoes = () => {
           </button>
         </div>
 
-        {/* Filtros */}
         <div className="flex gap-4 mb-4">
           <input
             type="text"
@@ -96,14 +113,13 @@ const Solucoes = () => {
           />
         </div>
 
-        {/* Tabela de usuários */}
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
           <table className="w-full border-collapse">
             <thead className="bg-blue-600 text-white">
               <tr>
                 <th className="p-3 text-left">Titulo</th>
-                <th className="p-3 text-left">Categoria</th>   
-                <th className="p-3 text-left">Status</th>               
+                <th className="p-3 text-left">Categoria</th>
+                <th className="p-3 text-left">Status</th>
                 <th className="p-3 text-left">Ações</th>
               </tr>
             </thead>
@@ -132,14 +148,16 @@ const Solucoes = () => {
                       >
                         Visualizar
                       </button>
-                      <button 
-                        onClick={() => toggleStatus(user._id)}
-                        className={`px-3 py-1 rounded-md ${
-                          user.ativo ? 'bg-green-600 text-white' : 'bg-gray-400 text-gray-800'
-                        }`}
-                      >
-                        {user.ativo ? 'Desativar' : 'Ativar'}
-                      </button>
+                      {shouldShowToggleButton && (
+                        <button 
+                          onClick={() => toggleStatus(user._id)}
+                          className={`px-3 py-1 rounded-md ${
+                            user.ativo ? 'bg-green-600 text-white' : 'bg-gray-400 text-gray-800'
+                          }`}
+                        >
+                          {user.ativo ? 'Desativar' : 'Ativar'}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -154,7 +172,6 @@ const Solucoes = () => {
           </table>
         </div>
 
-        {/* Paginação */}
         {totalPages > 1 && (
           <div className="flex justify-center mt-4">
             <button

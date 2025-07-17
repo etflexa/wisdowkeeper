@@ -18,7 +18,7 @@ const EditSolution = () => {
     // Simula uma busca na API pelo ID da solução
     const fetchSolution = async () => {
       try {
-        const response = await fetch(`https://wisdowkeeper-novatentativa.onrender.com/api/solucao/${id}`);
+        const response = await fetch(`http://localhost:3000/api/solucao/${id}`);
         const data = await response.json();
         setSolucao(data);
       } catch (error) {

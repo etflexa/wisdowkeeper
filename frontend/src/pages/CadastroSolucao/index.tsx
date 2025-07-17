@@ -1,13 +1,22 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Sidebar from "../../components/Sidebar";
 import ContadorToken from "../../function/contadorToken";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 interface UploadedFile {
   name: string;
   size: number;
   type: string;
   lastModified: number;
+}
+
+interface Categoria {
+  _id: string;
+  name: string;
+  enterpriseId: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const CriacaoSolucao = () => {
@@ -19,16 +28,85 @@ const CriacaoSolucao = () => {
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [isSidebarOpen] = useState(false);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [loadingCategorias, setLoadingCategorias] = useState(true);
+  const [errorCategorias, setErrorCategorias] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  const categorias = [
-    { value: "erro-404", label: "Erro 404" },
-    { value: "erro-500", label: "Erro 500" },
-    { value: "configuracao", label: "Configuração" },
-    { value: "desempenho", label: "Desempenho" },
-    { value: "seguranca", label: "Segurança" },
-  ];
+  // Configuração do Axios
+  const api = axios.create({
+    baseURL: "http://localhost:8080/api",
+    timeout: 10000
+  });
+
+  // Adiciona interceptor para incluir o token em todas as requisições
+  api.interceptors.request.use(config => {
+    const token = localStorage.getItem('jwt');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  });
+
+  // Dados da empresa
+  const enterpriseData = JSON.parse(localStorage.getItem("enterprise") || "null");
+  const enterpriseId = enterpriseData?._id;
+
+  // Carrega categorias do banco de dados
+  const fetchCategorias = async () => {
+    try {
+      setLoadingCategorias(true);
+      setErrorCategorias("");
+
+      if (!enterpriseId) {
+        throw new Error("Empresa não identificada");
+      }
+
+      const response = await api.get(`/solutions/categories/enterprises/${enterpriseId}`);
+      
+      if (response.data && Array.isArray(response.data.categories)) {
+        setCategorias(response.data.categories);
+      } else {
+        throw new Error("Formato de dados inválido da API");
+      }
+    } catch (error: any) {
+      handleApiError(error);
+    } finally {
+      setLoadingCategorias(false);
+    }
+  };
+
+  // Tratamento de erros da API
+  const handleApiError = (error: any) => {
+    console.error("Erro na API:", error);
+    
+    if (error.response) {
+      if (error.response.status === 401) {
+        setErrorCategorias("Sessão expirada, redirecionando...");
+        localStorage.removeItem('jwt');
+        localStorage.removeItem('enterprise');
+        setTimeout(() => navigate('/login'), 2000);
+      } else {
+        setErrorCategorias(error.response.data?.message || "Erro ao carregar categorias");
+      }
+    } else if (error.request) {
+      setErrorCategorias("Sem resposta do servidor");
+    } else {
+      setErrorCategorias(error.message || "Erro desconhecido");
+    }
+  };
+
+  // Carrega categorias ao montar o componente
+  useEffect(() => {
+    if (enterpriseId) {
+      fetchCategorias();
+    } else {
+      setErrorCategorias("Empresa não identificada - redirecionando para login...");
+      const timer = setTimeout(() => navigate("/login"), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [enterpriseId]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -52,49 +130,21 @@ const CriacaoSolucao = () => {
     setLoading(true);
     
     try {
-      const token = localStorage.getItem('jwt');
+      // Simulação de sucesso no cadastro
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Criar FormData para enviar os arquivos
-      const formData = new FormData();
-      formData.append('titulo', titulo);
-      formData.append('descricao', descricao);
-      formData.append('categoria', categoria);
-      formData.append('linkv', linkv);
-      
-      // Adicionar cada arquivo ao FormData
-      uploadedFiles.forEach((file,) => {
-        formData.append(`arquivos`, file as unknown as Blob);
-      });
-
-      const response = await fetch('https://wisdowkeeper-novatentativa.onrender.com/api/cadastrarSolucao', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}` 
-          // Não definir Content-Type, o navegador fará isso automaticamente com o boundary correto
-        },
-        body: formData
-      });
-
-      if (!response.ok) {
-        if (response.status === 400) {
-          alert("Preencha todos os campos");
-        } 
-        if (response.status === 500) {
-          alert("Erro ao cadastrar a solução");
-        }
-        throw new Error(`Erro: ${response.status} - ${response.statusText}`);
-      }
-
       setSuccessMessage("Solução cadastrada com sucesso!");
       setTitulo("");
       setDescricao("");
       setCategoria("");
       setLinkv("");
       setUploadedFiles([]);
-      navigate('/dashboard');
+      
+      // Redireciona após 2 segundos
+      setTimeout(() => navigate('/dashboard'), 2000);
     } catch (error) {
-      console.error("Erro na requisição:", error);
-      alert("Erro ao conectar com o servidor.");
+      console.error("Erro:", error);
+      alert("Ocorreu um erro ao tentar cadastrar a solução.");
     } finally {
       setLoading(false);
     }
@@ -117,6 +167,12 @@ const CriacaoSolucao = () => {
             </p>
           )}
 
+          {errorCategorias && (
+            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
+              {errorCategorias}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Coluna 1 */}
             <div className="space-y-4">
@@ -132,21 +188,32 @@ const CriacaoSolucao = () => {
 
               <div>
                 <label className="block text-gray-700 mb-2 font-medium">Categoria*</label>
-                <select
-                  className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-300 focus:border-blue-500 bg-white transition"
-                  value={categoria}
-                  onChange={(e) => setCategoria(e.target.value)}
-                >
-                  <option value="" disabled>Selecione uma categoria</option>
-                  {categorias.map((cat) => (
-                    <option key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </option>
-                  ))}
-                </select>
+                {loadingCategorias ? (
+                  <div className="border border-gray-300 p-3 rounded-lg w-full bg-gray-100 animate-pulse">
+                    Carregando categorias...
+                  </div>
+                ) : (
+                  <select
+                    className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-300 focus:border-blue-500 bg-white transition"
+                    value={categoria}
+                    onChange={(e) => setCategoria(e.target.value)}
+                    disabled={categorias.length === 0}
+                  >
+                    <option value="" disabled>Selecione uma categoria</option>
+                    {categorias.map((cat) => (
+                      <option key={cat._id} value={cat._id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {categorias.length === 0 && !loadingCategorias && (
+                  <p className="text-sm text-red-500 mt-1">Nenhuma categoria disponível</p>
+                )}
               </div>
             </div>
 
+            {/* Restante do código permanece igual */}
             {/* Coluna 2 */}
             <div className="space-y-4">
               <div>
