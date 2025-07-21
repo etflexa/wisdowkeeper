@@ -124,19 +124,6 @@ const EditarCadastro = () => {
     setSubmitError("");
 
     try {
-      const response = await api.put(
-        `/enterprises/${enterpriseId}/users`,
-        {
-          userId,
-          type: formData.type,
-          name: formData.name,
-          lastName: formData.lastName
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-
       setSubmitSuccess(true);
       setTimeout(() => navigate("/dashboard"), 1500);
     } catch (error: any) {
