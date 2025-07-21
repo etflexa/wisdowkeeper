@@ -1,261 +1,347 @@
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "../../components/Sidebar";
+import { useNavigate } from "react-router-dom";
 import ContadorToken from "../../function/contadorToken";
-import { useNavigate, } from "react-router-dom";
+import axios from "axios";
 
-interface UploadedFile {
-  name: string;
-  size: number;
-  type: string;
-  lastModified: number;
-  file: File;
-  url?: string;
-  _id?: string;
-  extention?: string;
-}
-
-
-
-const CriacaoSolucao = () => {
-  
-  const [titulo, setTitulo] = useState("");
-  const [descricao, setDescricao] = useState("");
-  const [categoria, setCategoria] = useState("");
-  const [linkv, setLinkv] = useState("");
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
+const Cadastro = () => {
   const [isSidebarOpen] = useState(false);
-  const [isEditing, ] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  
+  const api = axios.create({
+    baseURL: "http://localhost:8080/api",
+    timeout: 60000
+  });
 
-  const categorias = [
-    { value: "erro-404", label: "Erro 404" },
-    { value: "erro-500", label: "Erro 500" },
-    { value: "configuracao", label: "Configuração" },
-    { value: "desempenho", label: "Desempenho" },
-    { value: "seguranca", label: "Segurança" },
-  ];
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files).map(file => ({
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        lastModified: file.lastModified,
-        file: file
-      }));
-      setUploadedFiles([...uploadedFiles, ...newFiles]);
+  const getAuthData = () => {
+    try {
+      const enterpriseData = JSON.parse(localStorage.getItem('enterprise') || '{}');
+      return {
+        enterpriseId: enterpriseData?._id,
+        token: localStorage.getItem('jwt')
+      };
+    } catch (error) {
+      console.error("Erro ao ler localStorage:", error);
+      return { enterpriseId: null, token: null };
     }
   };
 
-  const removeFile = (index: number) => {
-    const updatedFiles = [...uploadedFiles];
-    updatedFiles.splice(index, 1);
-    setUploadedFiles(updatedFiles);
+  const { enterpriseId, token } = getAuthData();
+  const navigate = useNavigate();
+
+  const [formData, setFormData] = useState({
+    name: "",
+    lastName: "",
+    email: "",
+    cpf: "",
+    type: "",
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const userTypes = ["Estagiário", "Desenvolvedor", "Supervisor", "Administrador"];
+
+  useEffect(() => {
+    if (!token || !enterpriseId) {
+      setSubmitError("Autenticação necessária. Redirecionando para login...");
+      setTimeout(() => navigate('/login'), 2000);
+    }
+  }, [token, enterpriseId, navigate]);
+
+  const validateCPF = (cpf: string): boolean => {
+    cpf = cpf.replace(/\D/g, "");
+    if (cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
+
+    let soma = 0;
+    for (let i = 0; i < 9; i++) soma += parseInt(cpf[i]) * (10 - i);
+    let resto = (soma * 10) % 11;
+    if (resto === 10 || resto === 11) resto = 0;
+    if (resto !== parseInt(cpf[9])) return false;
+
+    soma = 0;
+    for (let i = 0; i < 10; i++) soma += parseInt(cpf[i]) * (11 - i);
+    resto = (soma * 10) % 11;
+    if (resto === 10 || resto === 11) resto = 0;
+    return resto === parseInt(cpf[10]);
   };
 
-  const handleSubmit = async () => {
-    if (!titulo || !descricao || !categoria) {
-      setErrorMessage("Preencha todos os campos obrigatórios");
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    setErrors(prev => ({ ...prev, [name]: "" }));
+    setSubmitError("");
+  };
+
+  const validate = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) newErrors.name = "Nome é obrigatório";
+    if (!formData.lastName.trim()) newErrors.lastName = "Sobrenome é obrigatório";
+    if (!formData.email.trim()) newErrors.email = "E-mail é obrigatório";
+    if (!formData.cpf.trim()) newErrors.cpf = "CPF é obrigatório";
+    if (!formData.type) newErrors.type = "Selecione um tipo de usuário";
+
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "E-mail inválido";
+    }
+    if (formData.cpf && !validateCPF(formData.cpf)) {
+      newErrors.cpf = "CPF inválido";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+
+    const { enterpriseId: currentEnterpriseId, token: currentToken } = getAuthData();
+    
+    if (!currentEnterpriseId || !currentToken) {
+      setSubmitError("Empresa não identificada. Redirecionando...");
+      setTimeout(() => navigate('/login'), 2000);
       return;
     }
 
-    setLoading(true);
-    setErrorMessage("");
-    setSuccessMessage("");
+    setIsSubmitting(true);
+    setSubmitError("");
 
     try {
-      // Simula o processamento dos dados
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 1. Register user
+      const response = await api.post(`/enterprises/${currentEnterpriseId}/users`, {
+        type: formData.type,
+        name: formData.name,
+        lastName: formData.lastName,
+        email: formData.email,
+        cpf: formData.cpf.replace(/\D/g, ""),
+      }, {
+        headers: {
+          Authorization: `Bearer ${currentToken}`,
+          "Content-Type": "application/json"
+        }
+      });
+
+      console.log("Full registration response:", response);
       
-      setSuccessMessage(`Solução ${isEditing ? 'atualizada' : 'cadastrada'} com sucesso!`);
-      
-      // Limpa o formulário se não for edição
-      if (!isEditing) {
-        setTitulo("");
-        setDescricao("");
-        setCategoria("");
-        setLinkv("");
-        setUploadedFiles([]);
+      // Try multiple possible ID paths in the response
+      const userId = response.data?._id || 
+                    response.data?.user?._id || 
+                    response.data?.data?._id ||
+                    response.data?.id;
+
+      if (!userId) {
+        throw new Error("API response does not contain user ID. Full response: " + JSON.stringify(response.data));
       }
+
+      console.log("Extracted user ID:", userId);
       
-      // Redireciona após 2 segundos
-      setTimeout(() => navigate('/solucoes'), 2000);
-    } catch (error) {
-      console.error("Erro:", error);
-      setErrorMessage("Erro ao processar a requisição");
+      // 2. Send credentials
+      try {
+        const emailResponse = await api.post(
+          `/enterprises/${currentEnterpriseId}/users/credentials`,
+          { userId },
+          {
+            headers: {
+              Authorization: `Bearer ${currentToken}`,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+        
+        console.log("Credentials email response:", emailResponse.data);
+        setSubmitSuccess(true);
+        setSubmitError("");
+        setFormData({ name: "", lastName: "", email: "", cpf: "", type: "" });
+      } catch (emailError: any) {
+        console.error("Email sending error:", {
+          error: emailError,
+          response: emailError.response?.data,
+          status: emailError.response?.status
+        });
+        
+        setSubmitSuccess(true);
+        setSubmitError("Usuário cadastrado com sucesso, mas o envio de credenciais falhou. " + 
+                      (emailError.response?.data?.message || ""));
+        setFormData({ name: "", lastName: "", email: "", cpf: "", type: "" });
+      }
+    } catch (error: any) {
+      console.error("Registration error:", {
+        error,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
+      if (error.response) {
+        if (error.response.status === 401) {
+          localStorage.removeItem('jwt');
+          localStorage.removeItem('enterprise');
+          setSubmitError("Sessão expirada. Redirecionando...");
+          setTimeout(() => navigate('/login'), 2000);
+          return;
+        }
+        setSubmitError(error.response.data?.message || 
+                      error.response.data?.error || 
+                      "Erro ao cadastrar usuário");
+      } else if (error.request) {
+        setSubmitError("Sem resposta do servidor. Verifique sua conexão.");
+      } else {
+        setSubmitError(error.message || "Erro ao processar a requisição");
+      }
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
+
+  if (!token || !enterpriseId) {
+    return (
+      <div className="min-h-screen flex bg-gray-100">
+        <Sidebar isSidebarOpen={isSidebarOpen} />
+        <div className="flex-1 flex justify-center items-center">
+          <div className="bg-white shadow-lg rounded-lg p-8 max-w-md text-center">
+            <h2 className="text-xl font-semibold text-red-600 mb-4">
+              Acesso não autorizado
+            </h2>
+            <p className="mb-4">{submitError || "Você precisa fazer login para acessar esta página"}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex bg-gray-100">
       <Sidebar isSidebarOpen={isSidebarOpen} />
-      <ContadorToken />
-      
-      <div className="flex-1 p-4 md:p-8 overflow-auto">
-        <div className="bg-white shadow-lg rounded-lg w-full max-w-4xl mx-auto p-6">
-          <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center text-blue-600">
-            {isEditing ? 'Editar Solução' : 'Criar Nova Solução'}
-          </h2>
-          
-          {successMessage && (
-            <p className="text-green-500 text-center mb-6 p-3 bg-green-50 rounded-lg">
-              {successMessage}
-            </p>
+      <ContadorToken/>
+
+      <div className="flex-1 flex justify-center items-center">
+        <form onSubmit={handleSubmit} className="bg-white shadow-lg rounded-lg p-8 w-full max-w-4xl">
+          <h1 className="text-2xl font-bold mb-6 text-center">Cadastro de Usuário</h1>
+
+          {submitError && (
+            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
+              {submitError}
+            </div>
           )}
 
-          {errorMessage && (
-            <p className="text-red-500 text-center mb-6 p-3 bg-red-50 rounded-lg">
-              {errorMessage}
-            </p>
+          {submitSuccess && !submitError && (
+            <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-lg">
+              Usuário cadastrado com sucesso! As credenciais de acesso foram enviadas para o email informado.
+            </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Coluna 1 */}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-gray-700 mb-2 font-medium">Título*</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nome *
                 <input
-                  className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition"
-                  placeholder="Digite o título da solução"
-                  value={titulo}
-                  onChange={(e) => setTitulo(e.target.value)}
+                  name="name"
+                  type="text"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className={`w-full p-3 border rounded-lg mt-1 ${
+                    errors.name ? "border-red-500" : "border-gray-300"
+                  }`}
+                  placeholder="Digite o nome"
                 />
-              </div>
+              </label>
+              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+            </div>
 
-              <div>
-                <label className="block text-gray-700 mb-2 font-medium">Categoria*</label>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Sobrenome *
+                <input
+                  name="lastName"
+                  type="text"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  className={`w-full p-3 border rounded-lg mt-1 ${
+                    errors.lastName ? "border-red-500" : "border-gray-300"
+                  }`}
+                  placeholder="Digite o sobrenome"
+                />
+              </label>
+              {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                E-mail *
+                <input
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`w-full p-3 border rounded-lg mt-1 ${
+                    errors.email ? "border-red-500" : "border-gray-300"
+                  }`}
+                  placeholder="exemplo@empresa.com"
+                />
+              </label>
+              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                CPF *
+                <input
+                  name="cpf"
+                  type="text"
+                  value={formData.cpf}
+                  onChange={handleChange}
+                  className={`w-full p-3 border rounded-lg mt-1 ${
+                    errors.cpf ? "border-red-500" : "border-gray-300"
+                  }`}
+                  placeholder="000.000.000-00"
+                />
+              </label>
+              {errors.cpf && <p className="text-red-500 text-sm mt-1">{errors.cpf}</p>}
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tipo de Usuário *
                 <select
-                  className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-300 focus:border-blue-500 bg-white transition"
-                  value={categoria}
-                  onChange={(e) => setCategoria(e.target.value)}
+                  name="type"
+                  value={formData.type}
+                  onChange={handleChange}
+                  className={`w-full p-3 border rounded-lg mt-1 ${
+                    errors.type ? "border-red-500" : "border-gray-300"
+                  }`}
                 >
-                  <option value="" disabled>Selecione uma categoria</option>
-                  {categorias.map((cat) => (
-                    <option key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </option>
+                  <option value="">Selecione...</option>
+                  {userTypes.map(type => (
+                    <option key={type} value={type}>{type}</option>
                   ))}
                 </select>
-              </div>
-            </div>
-
-            {/* Coluna 2 */}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-gray-700 mb-2 font-medium">Link do Vídeo</label>
-                <input
-                  type="url"
-                  className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition"
-                  placeholder="https://exemplo.com/video"
-                  value={linkv}
-                  onChange={(e) => setLinkv(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label className="block text-gray-700 mb-2 font-medium">Arquivos</label>
-                <div 
-                  className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition cursor-pointer hover:bg-gray-50"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <div className="text-center text-gray-500">
-                    <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                    <p>Clique para adicionar arquivos</p>
-                    <p className="text-xs mt-1">Arraste e solte arquivos aqui ou clique para selecionar</p>
-                  </div>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    onChange={handleFileChange}
-                    multiple
-                  />
-                </div>
-              </div>
+              </label>
+              {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type}</p>}
             </div>
           </div>
 
-          {/* Lista de arquivos */}
-          {uploadedFiles.length > 0 && (
-            <div className="mt-4">
-              <h3 className="text-gray-700 mb-2 font-medium">Arquivos selecionados:</h3>
-              <ul className="border rounded-lg divide-y divide-gray-200">
-                {uploadedFiles.map((file, index) => (
-                  <li key={index} className="p-3 flex justify-between items-center">
-                    <div className="flex items-center">
-                      <svg className="h-5 w-5 text-gray-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                      </svg>
-                      <span className="text-gray-700">{file.name}</span>
-                    </div>
-                    <button
-                      onClick={() => removeFile(index)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Descrição - Ocupa largura total */}
-          <div className="mt-6">
-            <label className="block text-gray-700 mb-2 font-medium">Descrição*</label>
-            <textarea
-              className="border border-gray-300 p-3 rounded-lg w-full h-32 focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition"
-              placeholder="Descreva detalhadamente a solução..."
-              value={descricao}
-              onChange={(e) => setDescricao(e.target.value)}
-            />
-          </div>
-
-          <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-end">
-            <button
-              onClick={() => navigate('/solucoes')}
-              className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium"
-            >
-              Cancelar
-            </button>
-            
-            <button
-              className={`px-6 py-3 rounded-lg transition font-medium ${
-                titulo && descricao && categoria
-                  ? "bg-blue-600 hover:bg-blue-700 text-white"
-                  : "bg-gray-400 text-gray-700 cursor-not-allowed"
-              }`}
-              onClick={handleSubmit}
-              disabled={!titulo || !descricao || !categoria || loading}
-            >
-              {loading ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  {isEditing ? 'Atualizando...' : 'Salvando...'}
-                </span>
-              ) : isEditing ? 'Atualizar Solução' : 'Salvar Solução'}
-            </button>
-          </div>
-
-          <p className="text-sm text-gray-500 mt-4">* Campos obrigatórios</p>
-        </div>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className={`w-full mt-6 py-3 px-4 border border-transparent rounded-lg shadow-sm text-white font-medium ${
+              isSubmitting ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
+            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+          >
+            {isSubmitting ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Cadastrando...
+              </>
+            ) : "Cadastrar Usuário"}
+          </button>
+        </form>
       </div>
     </div>
   );
 };
 
-export default CriacaoSolucao;
+export default Cadastro;

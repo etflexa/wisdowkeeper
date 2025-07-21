@@ -19,6 +19,12 @@ interface Categoria {
   updatedAt: string;
 }
 
+interface FileData {
+  name: string;
+  url: string;
+  extention: string;
+}
+
 const CriacaoSolucao = () => {
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -52,6 +58,7 @@ const CriacaoSolucao = () => {
   // Dados da empresa
   const enterpriseData = JSON.parse(localStorage.getItem("enterprise") || "null");
   const enterpriseId = enterpriseData?._id;
+  const userId = localStorage.getItem("userId");
 
   // Carrega categorias do banco de dados
   const fetchCategorias = async () => {
@@ -86,6 +93,7 @@ const CriacaoSolucao = () => {
         setErrorCategorias("Sessão expirada, redirecionando...");
         localStorage.removeItem('jwt');
         localStorage.removeItem('enterprise');
+        localStorage.removeItem('userId');
         setTimeout(() => navigate('/login'), 2000);
       } else {
         setErrorCategorias(error.response.data?.message || "Erro ao carregar categorias");
@@ -108,12 +116,16 @@ const CriacaoSolucao = () => {
     }
   }, [enterpriseId]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
-      setUploadedFiles([...uploadedFiles, ...newFiles]);
-    }
-  };
+ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (e.target.files) {
+    // Converta FileList para array de File objects
+    const newFiles = Array.from(e.target.files).map(file => ({
+      ...file,
+      lastModified: file.lastModified
+    }));
+    setUploadedFiles([...uploadedFiles, ...newFiles]);
+  }
+};
 
   const removeFile = (index: number) => {
     const updatedFiles = [...uploadedFiles];
@@ -121,30 +133,124 @@ const CriacaoSolucao = () => {
     setUploadedFiles(updatedFiles);
   };
 
+  const resetForm = () => {
+    setTitulo("");
+    setDescricao("");
+    setCategoria("");
+    setLinkv("");
+    setUploadedFiles([]);
+  };
+
+  const processFileUploads = async (files: UploadedFile[]): Promise<FileData[]> => {
+  const uploadedFilesData: FileData[] = [];
+  const filesToDeleteOnError: string[] = [];
+
+  try {
+    await Promise.all(files.map(async (file) => {
+      try {
+        // 1. Solicitar URL de upload para o backend
+        const uploadResponse = await api.post('/files/upload-request', {
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size
+        });
+
+        const { uploadUrl, fileUrl, fileId } = uploadResponse.data;
+
+        // 2. Criar um Blob a partir do File
+        // Agora que UploadedFile estende File, podemos usar diretamente
+        const fileBlob = file;
+
+        // 3. Fazer upload para o bucket
+        const uploadResult = await axios.put(uploadUrl, fileBlob, {
+          headers: {
+            'Content-Type': file.type,
+            'Content-Length': file.size
+          }
+        });
+
+        if (uploadResult.status !== 200) {
+          throw new Error(`Falha no upload do arquivo ${file.name}`);
+        }
+
+        // 4. Se sucesso, adicionar aos arquivos enviados
+        const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
+        uploadedFilesData.push({
+          name: file.name,
+          url: fileUrl,
+          extention: fileExtension
+        });
+
+        // Guardar ID para possível deleção em caso de erro
+        filesToDeleteOnError.push(fileId);
+      } catch (error) {
+        console.error(`Erro no upload do arquivo ${file.name}:`, error);
+        throw error;
+      }
+    }));
+
+    return uploadedFilesData;
+  } catch (error) {
+    // Se ocorrer qualquer erro, deletar arquivos já enviados
+    if (filesToDeleteOnError.length > 0) {
+      await Promise.all(filesToDeleteOnError.map(async (fileId) => {
+        try {
+          await api.delete(`/files/${fileId}`);
+        } catch (deleteError) {
+          console.error(`Erro ao deletar arquivo ${fileId}:`, deleteError);
+        }
+      }));
+    }
+
+    throw new Error("Falha no upload de arquivos. Todos os arquivos foram removidos.");
+  }
+};
+
   const handleSubmit = async () => {
     if (!titulo || !descricao || !categoria) {
       alert("Preencha todos os campos obrigatórios");
       return;
     }
-    
+
+    if (!userId) {
+      setErrorCategorias("Usuário não identificado");
+      return;
+    }
+
     setLoading(true);
-    
+    setSuccessMessage("");
+    setErrorCategorias("");
+
     try {
-      // Simulação de sucesso no cadastro
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // 1. Processar upload dos arquivos
+      let uploadedFileData: FileData[] = [];
       
-      setSuccessMessage("Solução cadastrada com sucesso!");
-      setTitulo("");
-      setDescricao("");
-      setCategoria("");
-      setLinkv("");
-      setUploadedFiles([]);
+      if (uploadedFiles.length > 0) {
+        uploadedFileData = await processFileUploads(uploadedFiles);
+      }
+
+      // 2. Montar objeto da solução
+      const solutionData = {
+        enterpriseId,
+        title: titulo,
+        category: categoria,
+        description: descricao,
+        videoURL: linkv || null,
+        files: uploadedFileData.length > 0 ? uploadedFileData : null
+      };
+
+      // 3. Enviar para API
+      const response = await api.post(`/solutions/users/${userId}`, solutionData);
       
-      // Redireciona após 2 segundos
-      setTimeout(() => navigate('/dashboard'), 2000);
-    } catch (error) {
-      console.error("Erro:", error);
-      alert("Ocorreu um erro ao tentar cadastrar a solução.");
+      if (response.status === 201) {
+        setSuccessMessage("Solução cadastrada com sucesso!");
+        resetForm();
+        setTimeout(() => navigate('/dashboard'), 2000);
+      } else {
+        throw new Error("Erro ao cadastrar solução");
+      }
+    } catch (error: any) {
+      handleApiError(error);
     } finally {
       setLoading(false);
     }
@@ -213,7 +319,6 @@ const CriacaoSolucao = () => {
               </div>
             </div>
 
-            {/* Restante do código permanece igual */}
             {/* Coluna 2 */}
             <div className="space-y-4">
               <div>
