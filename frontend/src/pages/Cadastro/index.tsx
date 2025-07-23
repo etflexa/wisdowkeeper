@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import Sidebar from "../../components/Sidebar";
+import Header from "../../components/Header";
 import { useNavigate } from "react-router-dom";
 import ContadorToken from "../../function/contadorToken";
 import axios from "axios";
 
 const Cadastro = () => {
-  const [isSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -41,6 +42,8 @@ const Cadastro = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const userTypes = ["Estagiário", "Desenvolvedor", "Supervisor", "Administrador"];
+
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   useEffect(() => {
     if (!token || !enterpriseId) {
@@ -109,7 +112,6 @@ const Cadastro = () => {
     setSubmitError("");
 
     try {
-      // 1. Register user
       const response = await api.post(`/enterprises/${currentEnterpriseId}/users`, {
         type: formData.type,
         name: formData.name,
@@ -123,9 +125,6 @@ const Cadastro = () => {
         }
       });
 
-      console.log("Full registration response:", response);
-      
-      // Try multiple possible ID paths in the response
       const userId = response.data?._id || 
                     response.data?.user?._id || 
                     response.data?.data?._id ||
@@ -134,12 +133,9 @@ const Cadastro = () => {
       if (!userId) {
         throw new Error("API response does not contain user ID. Full response: " + JSON.stringify(response.data));
       }
-
-      console.log("Extracted user ID:", userId);
       
-      // 2. Send credentials
       try {
-        const emailResponse = await api.post(
+        await api.post(
           `/enterprises/${currentEnterpriseId}/users/credentials`,
           { userId },
           {
@@ -150,29 +146,16 @@ const Cadastro = () => {
           }
         );
         
-        console.log("Credentials email response:", emailResponse.data);
         setSubmitSuccess(true);
         setSubmitError("");
         setFormData({ name: "", lastName: "", email: "", cpf: "", type: "" });
       } catch (emailError: any) {
-        console.error("Email sending error:", {
-          error: emailError,
-          response: emailError.response?.data,
-          status: emailError.response?.status
-        });
-        
         setSubmitSuccess(true);
         setSubmitError("Usuário cadastrado com sucesso, mas o envio de credenciais falhou. " + 
                       (emailError.response?.data?.message || ""));
         setFormData({ name: "", lastName: "", email: "", cpf: "", type: "" });
       }
     } catch (error: any) {
-      console.error("Registration error:", {
-        error,
-        response: error.response?.data,
-        status: error.response?.status
-      });
-      
       if (error.response) {
         if (error.response.status === 401) {
           localStorage.removeItem('jwt');
@@ -198,12 +181,15 @@ const Cadastro = () => {
     return (
       <div className="min-h-screen flex bg-gray-100">
         <Sidebar isSidebarOpen={isSidebarOpen} />
-        <div className="flex-1 flex justify-center items-center">
-          <div className="bg-white shadow-lg rounded-lg p-8 max-w-md text-center">
-            <h2 className="text-xl font-semibold text-red-600 mb-4">
-              Acesso não autorizado
-            </h2>
-            <p className="mb-4">{submitError || "Você precisa fazer login para acessar esta página"}</p>
+        <div className="flex-1 flex flex-col">
+          <Header onToggleSidebar={toggleSidebar} />
+          <div className="flex-1 flex justify-center items-center">
+            <div className="bg-white shadow-lg rounded-lg p-8 max-w-md text-center">
+              <h2 className="text-xl font-semibold text-red-600 mb-4">
+                Acesso não autorizado
+              </h2>
+              <p className="mb-4">{submitError || "Você precisa fazer login para acessar esta página"}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -215,26 +201,30 @@ const Cadastro = () => {
       <Sidebar isSidebarOpen={isSidebarOpen} />
       <ContadorToken/>
 
-      <div className="flex-1 flex justify-center items-center">
-        <form onSubmit={handleSubmit} className="bg-white shadow-lg rounded-lg p-8 w-full max-w-4xl">
-          <h1 className="text-2xl font-bold mb-6 text-center">Cadastro de Usuário</h1>
+      <div className="flex-1 flex flex-col">
+        <Header onToggleSidebar={toggleSidebar} />
+        
+        <div className="flex-1 flex justify-center items-start p-6">
+          <form onSubmit={handleSubmit} className="bg-white shadow-lg rounded-lg p-8 w-full max-w-4xl">
+            <h1 className="text-2xl font-bold mb-6 text-center">Cadastro de Usuário</h1>
 
-          {submitError && (
-            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
-              {submitError}
-            </div>
-          )}
+            {submitError && (
+              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
+                {submitError}
+              </div>
+            )}
 
-          {submitSuccess && !submitError && (
-            <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-lg">
-              Usuário cadastrado com sucesso! As credenciais de acesso foram enviadas para o email informado.
-            </div>
-          )}
+            {submitSuccess && !submitError && (
+              <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-lg">
+                Usuário cadastrado com sucesso! As credenciais de acesso foram enviadas para o email informado.
+              </div>
+            )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nome *
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nome *
+                </label>
                 <input
                   name="name"
                   type="text"
@@ -245,13 +235,13 @@ const Cadastro = () => {
                   }`}
                   placeholder="Digite o nome"
                 />
-              </label>
-              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-            </div>
+                {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+              </div>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Sobrenome *
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Sobrenome *
+                </label>
                 <input
                   name="lastName"
                   type="text"
@@ -262,13 +252,13 @@ const Cadastro = () => {
                   }`}
                   placeholder="Digite o sobrenome"
                 />
-              </label>
-              {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
-            </div>
+                {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
+              </div>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                E-mail *
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  E-mail *
+                </label>
                 <input
                   name="email"
                   type="email"
@@ -279,13 +269,13 @@ const Cadastro = () => {
                   }`}
                   placeholder="exemplo@empresa.com"
                 />
-              </label>
-              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-            </div>
+                {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+              </div>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                CPF *
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  CPF *
+                </label>
                 <input
                   name="cpf"
                   type="text"
@@ -296,13 +286,13 @@ const Cadastro = () => {
                   }`}
                   placeholder="000.000.000-00"
                 />
-              </label>
-              {errors.cpf && <p className="text-red-500 text-sm mt-1">{errors.cpf}</p>}
-            </div>
+                {errors.cpf && <p className="text-red-500 text-sm mt-1">{errors.cpf}</p>}
+              </div>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tipo de Usuário *
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tipo de Usuário *
+                </label>
                 <select
                   name="type"
                   value={formData.type}
@@ -316,29 +306,29 @@ const Cadastro = () => {
                     <option key={type} value={type}>{type}</option>
                   ))}
                 </select>
-              </label>
-              {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type}</p>}
+                {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type}</p>}
+              </div>
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className={`w-full mt-6 py-3 px-4 border border-transparent rounded-lg shadow-sm text-white font-medium ${
-              isSubmitting ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
-            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
-          >
-            {isSubmitting ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Cadastrando...
-              </>
-            ) : "Cadastrar Usuário"}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className={`w-full mt-6 py-3 px-4 border border-transparent rounded-lg shadow-sm text-white font-medium ${
+                isSubmitting ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
+              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+            >
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Cadastrando...
+                </>
+              ) : "Cadastrar Usuário"}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

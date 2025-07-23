@@ -7,12 +7,13 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen }) => {
-  // Obtém o perfil da empresa do localStorage
-  const enterpriseData = localStorage.getItem("enterpriseDetails");
-  const enterpriseProfile = enterpriseData ? JSON.parse(enterpriseData).profile : "Admin";
+  // Verifica se é empresa ou usuário
+  const isEnterprise = !!localStorage.getItem("enterprise");
+  const userData = localStorage.getItem("user");
+  const userProfile = userData ? JSON.parse(userData).type : null;
 
-  // Define quais links devem ser mostrados (adaptado para empresas)
-  const shouldShowUsers = enterpriseProfile === "Admin"; // Exemplo: só mostra se for perfil Admin
+  // Define quais links devem ser mostrados
+  const shouldShowAdminOptions = isEnterprise || userProfile === "Admin";
 
   return (
     <div
@@ -43,32 +44,36 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen }) => {
             Soluções
           </Link>
         </li>
-        <li>
-          <Link
-            to="/monitorar-consultas"
-            className="hover:bg-blue-500 p-2 rounded-lg block transition-colors duration-200"
-          >
-            Monitorar Consultas
-          </Link>
-        </li>
-        <li>
-          <Link
-            to="/categorizarsolucoes"
-            className="hover:bg-blue-500 p-2 rounded-lg block transition-colors duration-200"
-          >
-            Categorizar Soluções
-          </Link>
-        </li>
-        {shouldShowUsers && (
-          <li>
-            <Link
-              to="/usuarios"
-              className="hover:bg-blue-500 p-2 rounded-lg block transition-colors duration-200"
-            >
-              Usuários
-            </Link>
-          </li>
+        
+        {shouldShowAdminOptions && (
+          <>
+            <li>
+              <Link
+                to="/monitorar-consultas"
+                className="hover:bg-blue-500 p-2 rounded-lg block transition-colors duration-200"
+              >
+                Monitorar Consultas
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/categorizarsolucoes"
+                className="hover:bg-blue-500 p-2 rounded-lg block transition-colors duration-200"
+              >
+                Categorizar Soluções
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/usuarios"
+                className="hover:bg-blue-500 p-2 rounded-lg block transition-colors duration-200"
+              >
+                Usuários
+              </Link>
+            </li>
+          </>
         )}
+
         <li>
           <Link
             to="/feedbacks"

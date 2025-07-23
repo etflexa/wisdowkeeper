@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { FaUserCircle, FaBars } from "react-icons/fa";
 import Sidebar from "../../components/Sidebar";
 import ContadorToken from "../../function/contadorToken";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import Header from "../../components/Header";
 
 ChartJS.register(
   CategoryScale,
@@ -18,25 +17,8 @@ ChartJS.register(
 
 const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const navigate = useNavigate();
-
-  // Obtém o nome do usuário do localStorage
-  const enterpriseData = localStorage.getItem("enterprise");
-  const userName = enterpriseData ? JSON.parse(enterpriseData).name : "Empresa";
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-  const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
-
-  const handleLogout = () => {
-    // Remove todos os dados de autenticação
-    localStorage.removeItem("jwt");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("enterprise");
-    localStorage.removeItem("enterpriseDetails");
-    
-    navigate("/login");
-  };
 
   return (
     <div className="min-h-screen flex bg-gray-50">
@@ -47,35 +29,7 @@ const Dashboard = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
-        <header className="flex items-center justify-between bg-white p-4 shadow-md w-full">
-          <button onClick={toggleSidebar} className="lg:hidden text-2xl text-blue-600">
-            <FaBars />
-          </button>
-
-          <h1 className="text-3xl font-semibold text-blue-600">Seja Bem-Vindo(a) {userName}</h1>
-
-          {/* User Icon */}
-          <div className="relative">
-            <button onClick={toggleDropdown}>
-              <FaUserCircle className="text-3xl text-blue-600" />
-            </button>
-
-            {/* Dropdown */}
-            {isDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-40 bg-white shadow-lg rounded-lg p-2">
-                <ul>
-                  <li className="text-blue-600 p-2 hover:bg-blue-50 rounded">Ver Perfil</li>
-                  <li
-                    className="text-red-600 p-2 hover:bg-red-50 rounded cursor-pointer"
-                    onClick={handleLogout}
-                  >
-                    Sair
-                  </li>
-                </ul>
-              </div>
-            )}
-          </div>
-        </header>
+        <Header onToggleSidebar={toggleSidebar} showWelcome={true} />
 
         {/* Dashboard Content */}
         <div className="p-6 flex-1">

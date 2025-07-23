@@ -17,6 +17,7 @@ const Solucoes = () => {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [userProfile, setUserProfile] = useState("");
+  const [isEnterprise, setIsEnterprise] = useState(false);
   const itemsPerPage = 5;
   const navigate = useNavigate();
 
@@ -38,19 +39,27 @@ const Solucoes = () => {
       if (!token) return;
 
       try {
+        // Verifica se é uma empresa
+        const enterpriseData = localStorage.getItem('enterprise');
+        if (enterpriseData) {
+          setIsEnterprise(true);
+        }
+
         // Decodifica o token para extrair o ID do usuário
         const base64Url = token.split('.')[1];
         const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
         const decodedPayload = JSON.parse(atob(base64));
         const userId = decodedPayload.id;
 
-        // Busca o perfil do usuário
-        const userResponse = await axios.get(`http://localhost:3000/api/usuario/${userId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        setUserProfile(userResponse.data.perfil);
+        // Busca o perfil do usuário (se não for empresa)
+        if (!enterpriseData) {
+          const userResponse = await axios.get(`http://localhost:3000/api/usuario/${userId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          setUserProfile(userResponse.data.perfil);
+        }
 
         // Busca as soluções
         const solucoesResponse = await axios.get<Solucao[]>('http://localhost:3000/api/solucoes', {
@@ -95,12 +104,14 @@ const Solucoes = () => {
       <div className="flex-1 p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-semibold text-blue-600">Soluções</h1>
-          <button
-            onClick={() => navigate("/CadastrarSolucao")}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition"
-          >
-            Cadastrar Solução
-          </button>
+          {!isEnterprise && (
+            <button
+              onClick={() => navigate("/CadastrarSolucao")}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow hover:bg-blue-700 transition"
+            >
+              Cadastrar Solução
+            </button>
+          )}
         </div>
 
         <div className="flex gap-4 mb-4">
