@@ -55,10 +55,11 @@ const CriacaoSolucao = () => {
     return config;
   });
 
-  // Dados da empresa
+  // Obtém enterpriseId de ambas as fontes possíveis (empresa ou usuário)
   const enterpriseData = JSON.parse(localStorage.getItem("enterprise") || "null");
-  const enterpriseId = enterpriseData?._id;
-  const userId = localStorage.getItem("userId");
+  const userData = JSON.parse(localStorage.getItem("user") || "null");
+  const enterpriseId = enterpriseData?._id || userData?.enterpriseId;
+  const userId = userData?._id || localStorage.getItem("userId");
 
   // Carrega categorias do banco de dados
   const fetchCategorias = async () => {
@@ -93,6 +94,7 @@ const CriacaoSolucao = () => {
         setErrorCategorias("Sessão expirada, redirecionando...");
         localStorage.removeItem('jwt');
         localStorage.removeItem('enterprise');
+        localStorage.removeItem('user');
         localStorage.removeItem('userId');
         setTimeout(() => navigate('/login'), 2000);
       } else {
@@ -111,21 +113,26 @@ const CriacaoSolucao = () => {
       fetchCategorias();
     } else {
       setErrorCategorias("Empresa não identificada - redirecionando para login...");
-      const timer = setTimeout(() => navigate("/login"), 2000);
+      const timer = setTimeout(() => {
+        localStorage.removeItem('jwt');
+        localStorage.removeItem('enterprise');
+        localStorage.removeItem('user');
+        localStorage.removeItem('userId');
+        navigate("/login");
+      }, 2000);
       return () => clearTimeout(timer);
     }
   }, [enterpriseId]);
 
- const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  if (e.target.files) {
-    // Converta FileList para array de File objects
-    const newFiles = Array.from(e.target.files).map(file => ({
-      ...file,
-      lastModified: file.lastModified
-    }));
-    setUploadedFiles([...uploadedFiles, ...newFiles]);
-  }
-};
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files).map(file => ({
+        ...file,
+        lastModified: file.lastModified
+      }));
+      setUploadedFiles([...uploadedFiles, ...newFiles]);
+    }
+  };
 
   const removeFile = (index: number) => {
     const updatedFiles = [...uploadedFiles];
@@ -142,69 +149,61 @@ const CriacaoSolucao = () => {
   };
 
   const processFileUploads = async (files: UploadedFile[]): Promise<FileData[]> => {
-  const uploadedFilesData: FileData[] = [];
-  const filesToDeleteOnError: string[] = [];
+    const uploadedFilesData: FileData[] = [];
+    const filesToDeleteOnError: string[] = [];
 
-  try {
-    await Promise.all(files.map(async (file) => {
-      try {
-        // 1. Solicitar URL de upload para o backend
-        const uploadResponse = await api.post('/files/upload-request', {
-          fileName: file.name,
-          fileType: file.type,
-          fileSize: file.size
-        });
-
-        const { uploadUrl, fileUrl, fileId } = uploadResponse.data;
-
-        // 2. Criar um Blob a partir do File
-        // Agora que UploadedFile estende File, podemos usar diretamente
-        const fileBlob = file;
-
-        // 3. Fazer upload para o bucket
-        const uploadResult = await axios.put(uploadUrl, fileBlob, {
-          headers: {
-            'Content-Type': file.type,
-            'Content-Length': file.size
-          }
-        });
-
-        if (uploadResult.status !== 200) {
-          throw new Error(`Falha no upload do arquivo ${file.name}`);
-        }
-
-        // 4. Se sucesso, adicionar aos arquivos enviados
-        const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
-        uploadedFilesData.push({
-          name: file.name,
-          url: fileUrl,
-          extention: fileExtension
-        });
-
-        // Guardar ID para possível deleção em caso de erro
-        filesToDeleteOnError.push(fileId);
-      } catch (error) {
-        console.error(`Erro no upload do arquivo ${file.name}:`, error);
-        throw error;
-      }
-    }));
-
-    return uploadedFilesData;
-  } catch (error) {
-    // Se ocorrer qualquer erro, deletar arquivos já enviados
-    if (filesToDeleteOnError.length > 0) {
-      await Promise.all(filesToDeleteOnError.map(async (fileId) => {
+    try {
+      await Promise.all(files.map(async (file) => {
         try {
-          await api.delete(`/files/${fileId}`);
-        } catch (deleteError) {
-          console.error(`Erro ao deletar arquivo ${fileId}:`, deleteError);
+          const uploadResponse = await api.post('/files/upload-request', {
+            fileName: file.name,
+            fileType: file.type,
+            fileSize: file.size
+          });
+
+          const { uploadUrl, fileUrl, fileId } = uploadResponse.data;
+          const fileBlob = file;
+
+          const uploadResult = await axios.put(uploadUrl, fileBlob, {
+            headers: {
+              'Content-Type': file.type,
+              'Content-Length': file.size
+            }
+          });
+
+          if (uploadResult.status !== 200) {
+            throw new Error(`Falha no upload do arquivo ${file.name}`);
+          }
+
+          const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
+          uploadedFilesData.push({
+            name: file.name,
+            url: fileUrl,
+            extention: fileExtension
+          });
+
+          filesToDeleteOnError.push(fileId);
+        } catch (error) {
+          console.error(`Erro no upload do arquivo ${file.name}:`, error);
+          throw error;
         }
       }));
-    }
 
-    throw new Error("Falha no upload de arquivos. Todos os arquivos foram removidos.");
-  }
-};
+      return uploadedFilesData;
+    } catch (error) {
+      if (filesToDeleteOnError.length > 0) {
+        await Promise.all(filesToDeleteOnError.map(async (fileId) => {
+          try {
+            await api.delete(`/files/${fileId}`);
+          } catch (deleteError) {
+            console.error(`Erro ao deletar arquivo ${fileId}:`, deleteError);
+          }
+        }));
+      }
+
+      throw new Error("Falha no upload de arquivos. Todos os arquivos foram removidos.");
+    }
+  };
 
   const handleSubmit = async () => {
     if (!titulo || !descricao || !categoria) {
@@ -222,14 +221,12 @@ const CriacaoSolucao = () => {
     setErrorCategorias("");
 
     try {
-      // 1. Processar upload dos arquivos
       let uploadedFileData: FileData[] = [];
       
       if (uploadedFiles.length > 0) {
         uploadedFileData = await processFileUploads(uploadedFiles);
       }
 
-      // 2. Montar objeto da solução
       const solutionData = {
         enterpriseId,
         title: titulo,
@@ -239,7 +236,6 @@ const CriacaoSolucao = () => {
         files: uploadedFileData.length > 0 ? uploadedFileData : null
       };
 
-      // 3. Enviar para API
       const response = await api.post(`/solutions/users/${userId}`, solutionData);
       
       if (response.status === 201) {
@@ -280,7 +276,6 @@ const CriacaoSolucao = () => {
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Coluna 1 */}
             <div className="space-y-4">
               <div>
                 <label className="block text-gray-700 mb-2 font-medium">Título*</label>
@@ -319,7 +314,6 @@ const CriacaoSolucao = () => {
               </div>
             </div>
 
-            {/* Coluna 2 */}
             <div className="space-y-4">
               <div>
                 <label className="block text-gray-700 mb-2 font-medium">Link do Vídeo</label>
@@ -357,7 +351,6 @@ const CriacaoSolucao = () => {
             </div>
           </div>
 
-          {/* Lista de arquivos */}
           {uploadedFiles.length > 0 && (
             <div className="mt-4">
               <h3 className="text-gray-700 mb-2 font-medium">Arquivos selecionados:</h3>
@@ -384,7 +377,6 @@ const CriacaoSolucao = () => {
             </div>
           )}
 
-          {/* Descrição - Ocupa largura total */}
           <div className="mt-6">
             <label className="block text-gray-700 mb-2 font-medium">Descrição*</label>
             <textarea
