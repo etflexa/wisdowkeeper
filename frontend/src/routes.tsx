@@ -24,7 +24,7 @@ function MainRoutes() {
       <Route path="/+" element={<CadastroSolucao />} />
       <Route path="/editarsolucao" element={<EditarSolucao />} />
       <Route path="/solucoes" element={<Solucoes />} />
-      <Route path="/consultarsolucao" element={<ConsultarSolucao />} />
+      <Route path="/consultarsolucao/:id" element={<ConsultarSolucao />} />
       <Route path="/CadastrarSolucao" element={<CadastroSolucao />} />
       <Route path="/categorizarSolucoes" element={<CategorizarSolucoes />} />
       <Route path="/usuarios" element={<Usuarios />} />

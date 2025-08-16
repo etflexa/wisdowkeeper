@@ -49,7 +49,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen }) => {
           <>
             <li>
               <Link
-                to="/monitorar-consultas"
+                to="/dashboard"
                 className="hover:bg-blue-500 p-2 rounded-lg block transition-colors duration-200"
               >
                 Monitorar Consultas
@@ -73,15 +73,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen }) => {
             </li>
           </>
         )}
-
-        <li>
-          <Link
-            to="/feedbacks"
-            className="hover:bg-blue-500 p-2 rounded-lg block transition-colors duration-200"
-          >
-            Feedbacks
-          </Link>
-        </li>
       </ul>
     </div>
   );

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Sidebar from "../../components/Sidebar";
 import ContadorToken from "../../function/contadorToken";
+import Header from "../../components/Header";
 
 type File = {
   name: string;
@@ -49,14 +50,13 @@ axios.interceptors.request.use(config => {
 });
 
 const Solucoes = () => {
-  const [isSidebarOpen] = useState(false);
   const [solucoes, setSolucoes] = useState<Solucao[]>([]);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isEnterprise, setIsEnterprise] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [filter, setFilter] = useState<FilterType>('all');
+  const [filter] = useState<FilterType>('all');
   const [selectedUserId, setSelectedUserId] = useState("");
   const [userSearchTerm, setUserSearchTerm] = useState("");
   const [usersList, setUsersList] = useState<any[]>([]);
@@ -64,80 +64,111 @@ const Solucoes = () => {
   const [currentUserId, setCurrentUserId] = useState("");
   const [enterpriseId, setEnterpriseId] = useState("");
   const itemsPerPage = 5;
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Obter dados do usuário/empresa logado
+  // Obter dados do usuário/empresa logado - Versão corrigida
   useEffect(() => {
     const fetchAuthData = async () => {
       try {
-        const enterpriseData = localStorage.getItem('enterprise');
-        const userData = localStorage.getItem('user');
+        const enterprise = localStorage.getItem('enterprise');
+        const user = localStorage.getItem('user');
         
-        if (enterpriseData) {
-          const parsedEnterprise = JSON.parse(enterpriseData);
+        console.log('Dados do localStorage:', { enterprise, user });
+
+        if (enterprise) {
+          const enterpriseData = JSON.parse(enterprise);
+          console.log('Dados da empresa:', enterpriseData);
+          
+          if (!enterpriseData._id) {
+            console.error('ID da empresa não encontrado');
+            navigate('/login');
+            return;
+          }
+
           setIsEnterprise(true);
-          setCurrentUserId(parsedEnterprise.id);
-          setEnterpriseId(parsedEnterprise.id);
-          console.log('Empresa logada - Dados:', parsedEnterprise);
-          await fetchUsers();
-        } else if (userData) {
-          const parsedUser = JSON.parse(userData);
+          setCurrentUserId(enterpriseData._id);
+          setEnterpriseId(enterpriseData._id);
+          
+          try {
+            const response = await axios.get(`/api/enterprises/${enterpriseData._id}/users`);
+            setUsersList(response.data.users || []);
+            console.log('Usuários carregados:', response.data.users);
+          } catch (error) {
+            console.error('Erro ao carregar usuários:', error);
+            setUsersList([]);
+          }
+
+        } else if (user) {
+          const userData = JSON.parse(user);
+          console.log('Dados do usuário:', userData);
+          
+          if (!userData._id || !userData.enterpriseId) {
+            console.error('IDs do usuário não encontrados');
+            navigate('/login');
+            return;
+          }
+
           setIsEnterprise(false);
-          setCurrentUserId(parsedUser._id);
-          setEnterpriseId(parsedUser.enterpriseId);
-          console.log('Usuário logado - Dados:', parsedUser);
+          setCurrentUserId(userData._id);
+          setEnterpriseId(userData.enterpriseId);
+        } else {
+          console.error('Nenhum dado de autenticação encontrado');
+          navigate('/login');
         }
       } catch (error) {
         console.error('Erro ao carregar dados de autenticação:', error);
+        navigate('/login');
       }
     };
 
     fetchAuthData();
-  }, []);
+  }, [navigate]);
 
-  // Buscar lista de usuários (para empresas)
-  const fetchUsers = async () => {
-    try {
-      const response = await axios.get('/api/users');
-      setUsersList(response.data.users || []);
-      console.log('Usuários carregados:', response.data.users.length);
-    } catch (error) {
-      console.error('Erro ao buscar usuários:', error);
-    }
-  };
-
-  // Carregar soluções com base no filtro selecionado
+  // Carregar soluções - Versão corrigida
   useEffect(() => {
     const fetchSolutions = async () => {
+      if (!enterpriseId || !currentUserId) {
+        console.log('Aguardando IDs de autenticação...');
+        return;
+      }
+
       setIsLoading(true);
       try {
-        const enterpriseData = localStorage.getItem('enterprise');
-        const userData = localStorage.getItem('user');
-        
         let url = '';
         let params: any = { page: currentPage };
-        
-        if (enterpriseData) {
-          const enterprise = JSON.parse(enterpriseData);
-          if (filter === 'all') {
-            url = `/api/solutions/auth/${enterprise.id}/enterprises/${enterprise.id}`;
-          } else if (filter === 'user-specific' && selectedUserId) {
-            url = `/api/solutions/auth/${enterprise.id}/enterprises/${enterprise.id}/users/${selectedUserId}`;
+
+        if (isEnterprise) {
+          url = `/api/solutions/auth/${enterpriseId}/enterprises/${enterpriseId}`;
+          console.log('url aqui: ', url)
+          
+          if (filter === 'user-specific' && selectedUserId) {
+            params.userId = selectedUserId;
+            console.log(`Buscando soluções do usuário ${selectedUserId}`);
+          } else {
+            console.log('Buscando todas soluções da empresa');
           }
-        } else if (userData) {
-          const user = JSON.parse(userData);
-          url = `/api/solutions/auth/${user._id}/enterprises/${user.enterpriseId}`;
-          params.userId = user._id;
+        } else {
+          url = `/api/solutions/auth/${currentUserId}/enterprises/${enterpriseId}`;
+          console.log('Buscando soluções do usuário');
         }
 
-        console.log('URL da API:', url);
-        console.log('Parâmetros:', params);
-
+        console.log('Fazendo requisição para:', url, 'com params:', params);
         const response = await axios.get<ApiResponse>(url, { params });
+        
+        console.log('Soluções recebidas:', response.data.solutions);
         setSolucoes(response.data.solutions);
         setTotalPages(response.data.pagination.totalPages);
+
       } catch (error) {
         console.error('Erro ao buscar soluções:', error);
+        if (axios.isAxiosError(error)) {
+          console.error('Detalhes do erro:', {
+            status: error.response?.status,
+            data: error.response?.data,
+            url: error.config?.url
+          });
+        }
         setSolucoes([]);
         setTotalPages(1);
       } finally {
@@ -145,13 +176,11 @@ const Solucoes = () => {
       }
     };
 
-    if (enterpriseId || currentUserId) {
-      fetchSolutions();
-    }
-  }, [filter, currentPage, selectedUserId, currentUserId, enterpriseId]);
+    fetchSolutions();
+  }, [filter, currentPage, selectedUserId, currentUserId, enterpriseId, isEnterprise]);
 
   const handleEditarClick = (id: string) => {
-    navigate(`/editar-solucao`, { state: { id } });
+    navigate(`/editarsolucao`, { state: { id } });
   };
 
   const handleVisualizarClick = (id: string) => {
@@ -203,12 +232,15 @@ const Solucoes = () => {
     user.email.toLowerCase().includes(userSearchTerm.toLowerCase())
   );
 
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
   return (
     <div className="min-h-screen flex bg-gray-100">
       <Sidebar isSidebarOpen={isSidebarOpen} />
       <ContadorToken />
 
       <div className="flex-1 p-6">
+        <Header onToggleSidebar={toggleSidebar} showWelcome={true} />
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-semibold text-blue-600">Soluções</h1>
           {!isEnterprise && (
@@ -223,23 +255,6 @@ const Solucoes = () => {
 
         <div className="flex flex-col gap-4 mb-4">
           <div className="flex gap-4">
-            <select
-              value={filter}
-              onChange={(e) => {
-                setFilter(e.target.value as FilterType);
-                setCurrentPage(1);
-                setSelectedUserId("");
-              }}
-              className="p-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">
-                {isEnterprise ? "Todas as Soluções da Empresa" : "Minhas Soluções"}
-              </option>
-              {isEnterprise && (
-                <option value="user-specific">Soluções de um Usuário</option>
-              )}
-            </select>
-
             {isEnterprise && filter === 'user-specific' && (
               <div className="relative flex-1">
                 <input

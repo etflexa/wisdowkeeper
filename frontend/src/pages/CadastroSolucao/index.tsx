@@ -1,257 +1,127 @@
-import { useState, useRef, useEffect } from "react";
-import Sidebar from "../../components/Sidebar";
-import ContadorToken from "../../function/contadorToken";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import Sidebar from "../../components/Sidebar";
+import ContadorToken from "../../function/contadorToken";
 
-interface UploadedFile {
-  name: string;
-  size: number;
-  type: string;
-  lastModified: number;
-}
+// Configuração global do Axios
+axios.defaults.baseURL = 'http://localhost:8080';
+axios.interceptors.request.use(config => {
+  const token = localStorage.getItem('jwt' );
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
+// Tipos
 interface Categoria {
   _id: string;
   name: string;
-  enterpriseId: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface FileData {
-  name: string;
-  url: string;
-  extention: string;
 }
 
 const CriacaoSolucao = () => {
-  const [titulo, setTitulo] = useState("");
-  const [descricao, setDescricao] = useState("");
-  const [categoria, setCategoria] = useState("");
-  const [linkv, setLinkv] = useState("");
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [isSidebarOpen] = useState(false);
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [loadingCategorias, setLoadingCategorias] = useState(true);
-  const [errorCategorias, setErrorCategorias] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  // Configuração do Axios
-  const api = axios.create({
-    baseURL: "http://localhost:8080/api",
-    timeout: 10000
-  });
+  // Estados do formulário (sem os estados de arquivo)
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
+  const [videoURL, setVideoURL] = useState("");
+  
+  // Estados de controle
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [isSidebarOpen] = useState(false);
+  
+  // Estados para categorias
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [loadingCategorias, setLoadingCategorias] = useState(true);
 
-  // Adiciona interceptor para incluir o token em todas as requisições
-  api.interceptors.request.use(config => {
-    const token = localStorage.getItem('jwt');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  });
+  // Estados para IDs de autenticação
+  const [userId, setUserId] = useState<string | null>(null);
+  const [enterpriseId, setEnterpriseId] = useState<string | null>(null);
 
-  // Obtém enterpriseId de ambas as fontes possíveis (empresa ou usuário)
-  const enterpriseData = JSON.parse(localStorage.getItem("enterprise") || "null");
-  const userData = JSON.parse(localStorage.getItem("user") || "null");
-  const enterpriseId = enterpriseData?._id || userData?.enterpriseId;
-  const userId = userData?._id || localStorage.getItem("userId");
-
-  // Carrega categorias do banco de dados
-  const fetchCategorias = async () => {
-    try {
-      setLoadingCategorias(true);
-      setErrorCategorias("");
-
-      if (!enterpriseId) {
-        throw new Error("Empresa não identificada");
-      }
-
-      const response = await api.get(`/solutions/categories/enterprises/${enterpriseId}`);
-      
-      if (response.data && Array.isArray(response.data.categories)) {
-        setCategorias(response.data.categories);
-      } else {
-        throw new Error("Formato de dados inválido da API");
-      }
-    } catch (error: any) {
-      handleApiError(error);
-    } finally {
-      setLoadingCategorias(false);
-    }
-  };
-
-  // Tratamento de erros da API
-  const handleApiError = (error: any) => {
-    console.error("Erro na API:", error);
-    
-    if (error.response) {
-      if (error.response.status === 401) {
-        setErrorCategorias("Sessão expirada, redirecionando...");
-        localStorage.removeItem('jwt');
-        localStorage.removeItem('enterprise');
-        localStorage.removeItem('user');
-        localStorage.removeItem('userId');
-        setTimeout(() => navigate('/login'), 2000);
-      } else {
-        setErrorCategorias(error.response.data?.message || "Erro ao carregar categorias");
-      }
-    } else if (error.request) {
-      setErrorCategorias("Sem resposta do servidor");
-    } else {
-      setErrorCategorias(error.message || "Erro desconhecido");
-    }
-  };
-
-  // Carrega categorias ao montar o componente
+  // Efeito para buscar dados de autenticação
   useEffect(() => {
-    if (enterpriseId) {
-      fetchCategorias();
-    } else {
-      setErrorCategorias("Empresa não identificada - redirecionando para login...");
-      const timer = setTimeout(() => {
-        localStorage.removeItem('jwt');
-        localStorage.removeItem('enterprise');
-        localStorage.removeItem('user');
-        localStorage.removeItem('userId');
+    try {
+      const userStr = localStorage.getItem("user");
+      if (!userStr) throw new Error("Usuário não autenticado.");
+      
+      const userData = JSON.parse(userStr);
+      if (!userData._id || !userData.enterpriseId) throw new Error("Dados de autenticação incompletos.");
+
+      setUserId(userData._id);
+      setEnterpriseId(userData.enterpriseId);
+    } catch (err: any) {
+      setError("Sessão inválida. Redirecionando para o login...");
+      setTimeout(() => {
+        localStorage.clear();
         navigate("/login");
       }, 2000);
-      return () => clearTimeout(timer);
     }
+  }, [navigate]);
+
+  // Efeito para carregar as categorias
+  useEffect(() => {
+    if (!enterpriseId) return;
+
+    const fetchCategorias = async () => {
+      setLoadingCategorias(true);
+      setError("");
+      try {
+        const response = await axios.get(`/api/solutions/categories/enterprises/${enterpriseId}`);
+        setCategorias(response.data?.categories || []);
+      } catch (err) {
+        console.error("Erro ao carregar categorias:", err);
+        setError("Não foi possível carregar as categorias.");
+      } finally {
+        setLoadingCategorias(false);
+      }
+    };
+
+    fetchCategorias();
   }, [enterpriseId]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files).map(file => ({
-        ...file,
-        lastModified: file.lastModified
-      }));
-      setUploadedFiles([...uploadedFiles, ...newFiles]);
-    }
-  };
-
-  const removeFile = (index: number) => {
-    const updatedFiles = [...uploadedFiles];
-    updatedFiles.splice(index, 1);
-    setUploadedFiles(updatedFiles);
-  };
-
-  const resetForm = () => {
-    setTitulo("");
-    setDescricao("");
-    setCategoria("");
-    setLinkv("");
-    setUploadedFiles([]);
-  };
-
-  const processFileUploads = async (files: UploadedFile[]): Promise<FileData[]> => {
-    const uploadedFilesData: FileData[] = [];
-    const filesToDeleteOnError: string[] = [];
-
-    try {
-      await Promise.all(files.map(async (file) => {
-        try {
-          const uploadResponse = await api.post('/files/upload-request', {
-            fileName: file.name,
-            fileType: file.type,
-            fileSize: file.size
-          });
-
-          const { uploadUrl, fileUrl, fileId } = uploadResponse.data;
-          const fileBlob = file;
-
-          const uploadResult = await axios.put(uploadUrl, fileBlob, {
-            headers: {
-              'Content-Type': file.type,
-              'Content-Length': file.size
-            }
-          });
-
-          if (uploadResult.status !== 200) {
-            throw new Error(`Falha no upload do arquivo ${file.name}`);
-          }
-
-          const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
-          uploadedFilesData.push({
-            name: file.name,
-            url: fileUrl,
-            extention: fileExtension
-          });
-
-          filesToDeleteOnError.push(fileId);
-        } catch (error) {
-          console.error(`Erro no upload do arquivo ${file.name}:`, error);
-          throw error;
-        }
-      }));
-
-      return uploadedFilesData;
-    } catch (error) {
-      if (filesToDeleteOnError.length > 0) {
-        await Promise.all(filesToDeleteOnError.map(async (fileId) => {
-          try {
-            await api.delete(`/files/${fileId}`);
-          } catch (deleteError) {
-            console.error(`Erro ao deletar arquivo ${fileId}:`, deleteError);
-          }
-        }));
-      }
-
-      throw new Error("Falha no upload de arquivos. Todos os arquivos foram removidos.");
-    }
-  };
-
+  // Função de submissão simplificada
   const handleSubmit = async () => {
-    if (!titulo || !descricao || !categoria) {
-      alert("Preencha todos os campos obrigatórios");
+    if (!title || !description || !category) {
+      setError("Por favor, preencha todos os campos obrigatórios.");
       return;
     }
 
-    if (!userId) {
-      setErrorCategorias("Usuário não identificado");
+    if (!userId || !enterpriseId) {
+      setError("Não foi possível identificar o usuário ou empresa. Por favor, faça o login novamente.");
       return;
     }
 
     setLoading(true);
-    setSuccessMessage("");
-    setErrorCategorias("");
+    setError("");
 
     try {
-      let uploadedFileData: FileData[] = [];
-      
-      if (uploadedFiles.length > 0) {
-        uploadedFileData = await processFileUploads(uploadedFiles);
-      }
-
+      // Payload sem o campo 'files'
       const solutionData = {
         enterpriseId,
-        title: titulo,
-        category: categoria,
-        description: descricao,
-        videoURL: linkv || null,
-        files: uploadedFileData.length > 0 ? uploadedFileData : null
+        title,
+        category,
+        description,
+        videoURL: videoURL || null,
       };
 
-      const response = await api.post(`/solutions/users/${userId}`, solutionData);
+      await axios.post(`/api/solutions/users/${userId}`, solutionData);
       
-      if (response.status === 201) {
-        setSuccessMessage("Solução cadastrada com sucesso!");
-        resetForm();
-        setTimeout(() => navigate('/dashboard'), 2000);
-      } else {
-        throw new Error("Erro ao cadastrar solução");
-      }
-    } catch (error: any) {
-      handleApiError(error);
+      alert("Solução cadastrada com sucesso!");
+      navigate('/solucoes');
+
+    } catch (err) {
+      console.error("Erro ao cadastrar solução:", err);
+      setError("Ocorreu um erro ao salvar a solução. Verifique os dados e tente novamente.");
     } finally {
       setLoading(false);
     }
   };
 
+  // JSX simplificado, sem a seção de upload
   return (
     <div className="min-h-screen flex bg-gray-100">
       <Sidebar isSidebarOpen={isSidebarOpen} />
@@ -263,30 +133,38 @@ const CriacaoSolucao = () => {
             Criar Nova Solução
           </h2>
           
-          {successMessage && (
-            <p className="text-green-500 text-center mb-6 p-3 bg-green-50 rounded-lg">
-              {successMessage}
-            </p>
-          )}
-
-          {errorCategorias && (
-            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
-              {errorCategorias}
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-center">
+              {error}
             </div>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Coluna da Esquerda */}
             <div className="space-y-4">
               <div>
                 <label className="block text-gray-700 mb-2 font-medium">Título*</label>
                 <input
-                  className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition"
+                  className="border border-gray-300 p-3 rounded-lg w-full"
                   placeholder="Digite o título da solução"
-                  value={titulo}
-                  onChange={(e) => setTitulo(e.target.value)}
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
                 />
               </div>
+              <div>
+                <label className="block text-gray-700 mb-2 font-medium">Link do Vídeo</label>
+                <input
+                  type="url"
+                  className="border border-gray-300 p-3 rounded-lg w-full"
+                  placeholder="https://exemplo.com/video"
+                  value={videoURL}
+                  onChange={(e ) => setVideoURL(e.target.value)}
+                />
+              </div>
+            </div>
 
+            {/* Coluna da Direita */}
+            <div className="space-y-4">
               <div>
                 <label className="block text-gray-700 mb-2 font-medium">Categoria*</label>
                 {loadingCategorias ? (
@@ -295,128 +173,54 @@ const CriacaoSolucao = () => {
                   </div>
                 ) : (
                   <select
-                    className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-300 focus:border-blue-500 bg-white transition"
-                    value={categoria}
-                    onChange={(e) => setCategoria(e.target.value)}
+                    className="border border-gray-300 p-3 rounded-lg w-full bg-white"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
                     disabled={categorias.length === 0}
                   >
                     <option value="" disabled>Selecione uma categoria</option>
                     {categorias.map((cat) => (
-                      <option key={cat._id} value={cat._id}>
+                      <option key={cat._id} value={cat.name}>
                         {cat.name}
                       </option>
                     ))}
                   </select>
                 )}
-                {categorias.length === 0 && !loadingCategorias && (
-                  <p className="text-sm text-red-500 mt-1">Nenhuma categoria disponível</p>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-gray-700 mb-2 font-medium">Link do Vídeo</label>
-                <input
-                  type="url"
-                  className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition"
-                  placeholder="https://exemplo.com/video"
-                  value={linkv}
-                  onChange={(e) => setLinkv(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label className="block text-gray-700 mb-2 font-medium">Arquivos</label>
-                <div 
-                  className="border border-gray-300 p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition cursor-pointer hover:bg-gray-50"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <div className="text-center text-gray-500">
-                    <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                    <p>Clique para adicionar arquivos</p>
-                    <p className="text-xs mt-1">Arraste e solte arquivos aqui ou clique para selecionar</p>
-                  </div>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    onChange={handleFileChange}
-                    multiple
-                  />
-                </div>
               </div>
             </div>
           </div>
 
-          {uploadedFiles.length > 0 && (
-            <div className="mt-4">
-              <h3 className="text-gray-700 mb-2 font-medium">Arquivos selecionados:</h3>
-              <ul className="border rounded-lg divide-y divide-gray-200">
-                {uploadedFiles.map((file, index) => (
-                  <li key={index} className="p-3 flex justify-between items-center">
-                    <div className="flex items-center">
-                      <svg className="h-5 w-5 text-gray-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                      </svg>
-                      <span className="text-gray-700">{file.name}</span>
-                    </div>
-                    <button
-                      onClick={() => removeFile(index)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
+          {/* Campo de Descrição abaixo das colunas */}
           <div className="mt-6">
             <label className="block text-gray-700 mb-2 font-medium">Descrição*</label>
             <textarea
-              className="border border-gray-300 p-3 rounded-lg w-full h-32 focus:ring-2 focus:ring-blue-300 focus:border-blue-500 transition"
+              className="border border-gray-300 p-3 rounded-lg w-full h-32"
               placeholder="Descreva detalhadamente a solução..."
-              value={descricao}
-              onChange={(e) => setDescricao(e.target.value)}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
             />
           </div>
 
-          <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-end">
+          {/* Botões de Ação */}
+          <div className="mt-8 flex justify-end gap-4">
             <button
               onClick={() => navigate('/solucoes')}
-              className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium"
+              className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium"
             >
               Cancelar
             </button>
-            
             <button
-              className={`px-6 py-3 rounded-lg transition font-medium ${
-                titulo && descricao && categoria
-                  ? "bg-blue-600 hover:bg-blue-700 text-white"
-                  : "bg-gray-400 text-gray-700 cursor-not-allowed"
+              className={`px-6 py-3 rounded-lg font-medium text-white ${
+                title && description && category && !loading
+                  ? "bg-blue-600 hover:bg-blue-700"
+                  : "bg-gray-400 cursor-not-allowed"
               }`}
               onClick={handleSubmit}
-              disabled={!titulo || !descricao || !categoria || loading}
+              disabled={!title || !description || !category || loading}
             >
-              {loading ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Salvando...
-                </span>
-              ) : "Salvar Solução"}
+              {loading ? "Salvando..." : "Salvar Solução"}
             </button>
           </div>
-
-          <p className="text-sm text-gray-500 mt-4">* Campos obrigatórios</p>
         </div>
       </div>
     </div>

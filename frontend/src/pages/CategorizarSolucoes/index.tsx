@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/Sidebar";
 import ContadorToken from "../../function/contadorToken";
 import axios from "axios";
+import Header from "../../components/Header";
 
 type Categoria = {
   _id: string;
@@ -13,12 +14,10 @@ type Categoria = {
 };
 
 type ApiResponse = {
-  categories: Categoria[]; // Alterado para corresponder ao formato da API
-  // Adicione outros campos se a API retornar paginação ou metadados
+  categories: Categoria[];
 };
 
 const CategorizarSolucoes = () => {
-  const [isSidebarOpen] = useState(false);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [novaCategoria, setNovaCategoria] = useState("");
   const [editandoCategoria, setEditandoCategoria] = useState<{ id: string | null; name: string }>({
@@ -28,15 +27,14 @@ const CategorizarSolucoes = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Configuração do Axios com interceptor para tratamento global de erros
   const api = axios.create({
     baseURL: "http://localhost:8080/api",
     timeout: 10000
   });
 
-  // Adiciona interceptor para incluir o token em todas as requisições
   api.interceptors.request.use(config => {
     const token = localStorage.getItem('jwt');
     if (token) {
@@ -45,12 +43,10 @@ const CategorizarSolucoes = () => {
     return config;
   });
 
-  // Dados da empresa
   const enterpriseData = JSON.parse(localStorage.getItem("enterprise") || "null");
   const enterpriseId = enterpriseData?._id;
   const enterpriseName = enterpriseData?.name || "Empresa";
 
-  // Carrega categorias
   const fetchCategorias = async () => {
     try {
       setIsLoading(true);
@@ -62,7 +58,6 @@ const CategorizarSolucoes = () => {
 
       const response = await api.get<ApiResponse>(`/solutions/categories/enterprises/${enterpriseId}`);
       
-      // Verifica se a resposta contém o array de categorias
       if (response.data && Array.isArray(response.data.categories)) {
         setCategorias(response.data.categories);
       } else {
@@ -75,7 +70,6 @@ const CategorizarSolucoes = () => {
     }
   };
 
-  // Tratamento global de erros
   const handleApiError = (error: any) => {
     console.error("Erro na API:", error);
     
@@ -95,7 +89,6 @@ const CategorizarSolucoes = () => {
     }
   };
 
-  // Efeito inicial - carrega categorias
   useEffect(() => {
     if (enterpriseId) {
       fetchCategorias();
@@ -106,7 +99,6 @@ const CategorizarSolucoes = () => {
     }
   }, [enterpriseId]);
 
-  // Adiciona nova categoria
   const adicionarCategoria = async () => {
     if (!novaCategoria.trim()) {
       setError("Nome da categoria é obrigatório");
@@ -117,7 +109,11 @@ const CategorizarSolucoes = () => {
       setIsLoading(true);
       setError("");
 
-      // Atualiza a lista após adicionar
+      // Chamada POST para criar nova categoria
+      await api.post(`/solutions/categories/enterprises/${enterpriseId}`, {
+        name: novaCategoria
+      });
+
       await fetchCategorias();
       setNovaCategoria("");
       setSuccess("Categoria adicionada com sucesso!");
@@ -129,7 +125,6 @@ const CategorizarSolucoes = () => {
     }
   };
 
-  // Atualiza categoria
   const salvarEdicao = async () => {
     if (!editandoCategoria.id || !editandoCategoria.name.trim()) {
       setError("Nome da categoria é obrigatório");
@@ -145,7 +140,6 @@ const CategorizarSolucoes = () => {
         { name: editandoCategoria.name }
       );
 
-      // Atualiza a lista após editar
       await fetchCategorias();
       setEditandoCategoria({ id: null, name: "" });
       setSuccess("Categoria atualizada com sucesso!");
@@ -157,7 +151,6 @@ const CategorizarSolucoes = () => {
     }
   };
 
-  // Exclui categoria
   const excluirCategoria = async (id: string) => {
     if (!window.confirm("Tem certeza que deseja excluir esta categoria?")) return;
 
@@ -167,7 +160,6 @@ const CategorizarSolucoes = () => {
       
       await api.delete(`/solutions/categories/${id}`);
       
-      // Atualiza a lista após excluir
       await fetchCategorias();
       setSuccess("Categoria excluída com sucesso!");
       setTimeout(() => setSuccess(""), 3000);
@@ -177,6 +169,8 @@ const CategorizarSolucoes = () => {
       setIsLoading(false);
     }
   };
+
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   if (!enterpriseId) {
     return (
@@ -198,10 +192,10 @@ const CategorizarSolucoes = () => {
     <div className="min-h-screen flex bg-gray-100">
       <Sidebar isSidebarOpen={isSidebarOpen} />
       <ContadorToken />
-
       <div className="flex-1 p-6 overflow-auto">
+        <Header onToggleSidebar={toggleSidebar} showWelcome={true} />
         <div className="bg-white min-h-full shadow-lg rounded-lg p-6">
-          <h2 className="text-2xl font-bold mb-6 text-center">Categorizar Soluções - {enterpriseName}</h2>
+          <h2 className="text-2xl font-bold mb-6 text-center">Categorizar Soluções </h2>
 
           {error && (
             <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
