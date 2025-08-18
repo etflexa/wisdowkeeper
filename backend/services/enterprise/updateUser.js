@@ -2,7 +2,7 @@ import { AppError } from "../../middleware/appError.js";
 import { User } from "../../models/user.js";
 
 export async function updateUser(data) {
-  const { enterpriseId, userId, type, name, lastName } = data;
+  const { enterpriseId, userId, type, name, lastName, isActive} = data;
 
   const existingUser = await User.findById(userId);
 
@@ -21,6 +21,7 @@ export async function updateUser(data) {
     type,
     name,
     lastName,
+    isActive
   };
 
   await User.findByIdAndUpdate(userId, objUpdateUser);
