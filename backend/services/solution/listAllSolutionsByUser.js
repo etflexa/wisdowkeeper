@@ -23,8 +23,13 @@ export async function listAllSolutionByUser(data) {
   }
 
   const [solutions, total] = await Promise.all([
-    Solution.find({ userId }).skip(skip).limit(limit).lean(),
-    Solution.countDocuments({ userId }),
+    Solution.find({ userId })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+
+      .lean(),
+    Solution.countDocuments({ userId })
   ]);
 
   const totalPages = Math.ceil(total / limit);
@@ -34,7 +39,7 @@ export async function listAllSolutionByUser(data) {
     pagination: {
       currentPage: page,
       totalPages,
-      totalItems: total,
-    },
-  };
+      totalItems: total
+    }
+  };
 }

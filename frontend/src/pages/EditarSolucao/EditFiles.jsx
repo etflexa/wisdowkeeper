@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 
-export default function UploadFiles({ authId, files, setFiles }) {
+export default function EditFiles({ authId, files, setFiles }) {
   const [loading, setLoading] = useState(false);
   const token = localStorage.getItem("jwt");
 

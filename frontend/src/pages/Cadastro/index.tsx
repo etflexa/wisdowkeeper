@@ -180,7 +180,9 @@ const Cadastro = () => {
   if (!token || !enterpriseId) {
     return (
       <div className="min-h-screen flex bg-gray-100">
-        <Sidebar isSidebarOpen={isSidebarOpen} />
+        <Sidebar isSidebarOpen={isSidebarOpen} onCloseSidebar={function (): void {
+          throw new Error("Function not implemented.");
+        } } />
         <div className="flex-1 flex flex-col">
           <Header onToggleSidebar={toggleSidebar} />
           <div className="flex-1 flex justify-center items-center">
@@ -198,7 +200,9 @@ const Cadastro = () => {
 
   return (
     <div className="min-h-screen flex bg-gray-100">
-      <Sidebar isSidebarOpen={isSidebarOpen} />
+      <Sidebar isSidebarOpen={isSidebarOpen} onCloseSidebar={function (): void {
+        throw new Error("Function not implemented.");
+      } } />
       <ContadorToken/>
 
       <div className="flex-1 flex flex-col">

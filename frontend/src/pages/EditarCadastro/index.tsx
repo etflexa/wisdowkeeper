@@ -76,7 +76,11 @@ const EditarCadastro = () => {
       }
     };
 
-    loadUserData();
+    if (enterpriseId && token && userId) {
+      loadUserData();
+    } else {
+      setIsLoading(false);
+    }
   }, [userId, enterpriseId, token]);
 
   const handleApiError = (error: any, defaultMessage: string) => {
@@ -124,8 +128,22 @@ const EditarCadastro = () => {
     setSubmitError("");
 
     try {
+      // Chamada PATCH para atualizar o usuário
+      await api.patch(
+        `/enterprises/${enterpriseId}/users`,
+        {
+          userId: userId,
+          type: formData.type,
+          name: formData.name,
+          lastName: formData.lastName
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
       setSubmitSuccess(true);
-      setTimeout(() => navigate("/dashboard"), 1500);
+      setTimeout(() => navigate("/usuarios"), 1500);
     } catch (error: any) {
       handleApiError(error, "Erro ao atualizar usuário");
     } finally {
@@ -136,7 +154,9 @@ const EditarCadastro = () => {
   if (!token || !enterpriseId || !userId) {
     return (
       <div className="min-h-screen flex bg-gray-100">
-        <Sidebar isSidebarOpen={isSidebarOpen} />
+        <Sidebar isSidebarOpen={isSidebarOpen} onCloseSidebar={function (): void {
+          throw new Error("Function not implemented.");
+        } } />
         <div className="flex-1 flex justify-center items-center">
           <div className="bg-white shadow-lg rounded-lg p-8 max-w-md text-center">
             <h2 className="text-xl font-semibold text-red-600 mb-4">
@@ -145,6 +165,12 @@ const EditarCadastro = () => {
             <p className="mb-4">
               {submitError || "Você precisa fazer login para acessar esta página"}
             </p>
+            <button 
+              onClick={() => navigate("/login")}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Ir para Login
+            </button>
           </div>
         </div>
       </div>
@@ -154,7 +180,9 @@ const EditarCadastro = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen flex bg-gray-100">
-        <Sidebar isSidebarOpen={isSidebarOpen} />
+        <Sidebar isSidebarOpen={isSidebarOpen} onCloseSidebar={function (): void {
+          throw new Error("Function not implemented.");
+        } } />
         <div className="flex-1 flex justify-center items-center">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
@@ -167,11 +195,13 @@ const EditarCadastro = () => {
 
   return (
     <div className="min-h-screen flex bg-gray-100">
-      <Sidebar isSidebarOpen={isSidebarOpen} />
+      <Sidebar isSidebarOpen={isSidebarOpen} onCloseSidebar={function (): void {
+        throw new Error("Function not implemented.");
+      } } />
       <ContadorToken />
 
-      <div className="flex-1 flex justify-center items-center">
-        <form onSubmit={handleSubmit} className="bg-white shadow-lg rounded-lg p-8 w-full max-w-4xl">
+      <div className="flex-1 flex justify-center items-center p-4">
+        <form onSubmit={handleSubmit} className="bg-white shadow-lg rounded-lg p-6 w-full max-w-4xl">
           <h1 className="text-2xl font-bold mb-6 text-center">Editar Usuário</h1>
 
           {submitError && (
@@ -190,101 +220,112 @@ const EditarCadastro = () => {
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Nome *
-                <input
-                  name="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className={`w-full p-3 border rounded-lg mt-1 ${
-                    errors.name ? "border-red-500" : "border-gray-300"
-                  }`}
-                  placeholder="Digite o nome"
-                />
               </label>
+              <input
+                name="name"
+                type="text"
+                value={formData.name}
+                onChange={handleChange}
+                className={`w-full p-3 border rounded-lg mt-1 ${
+                  errors.name ? "border-red-500" : "border-gray-300"
+                }`}
+                placeholder="Digite o nome"
+              />
               {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
             </div>
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Sobrenome *
-                <input
-                  name="lastName"
-                  type="text"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  className={`w-full p-3 border rounded-lg mt-1 ${
-                    errors.lastName ? "border-red-500" : "border-gray-300"
-                  }`}
-                  placeholder="Digite o sobrenome"
-                />
               </label>
+              <input
+                name="lastName"
+                type="text"
+                value={formData.lastName}
+                onChange={handleChange}
+                className={`w-full p-3 border rounded-lg mt-1 ${
+                  errors.lastName ? "border-red-500" : "border-gray-300"
+                }`}
+                placeholder="Digite o sobrenome"
+              />
               {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
             </div>
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 E-mail
-                <input
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  className="w-full p-3 border border-gray-300 rounded-lg mt-1"
-                  readOnly
-                />
               </label>
+              <input
+                name="email"
+                type="email"
+                value={formData.email}
+                className="w-full p-3 border border-gray-300 rounded-lg mt-1 bg-gray-100"
+                readOnly
+              />
+              <p className="text-xs text-gray-500 mt-1">E-mail não pode ser alterado</p>
             </div>
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 CPF
-                <input
-                  name="cpf"
-                  type="text"
-                  value={formData.cpf}
-                  className="w-full p-3 border border-gray-300 rounded-lg mt-1"
-                  readOnly
-                />
               </label>
+              <input
+                name="cpf"
+                type="text"
+                value={formData.cpf}
+                className="w-full p-3 border border-gray-300 rounded-lg mt-1 bg-gray-100"
+                readOnly
+              />
+              <p className="text-xs text-gray-500 mt-1">CPF não pode ser alterado</p>
             </div>
 
-            <div className="mb-4">
+            <div className="mb-4 md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Tipo de Usuário *
-                <select
-                  name="type"
-                  value={formData.type}
-                  onChange={handleChange}
-                  className={`w-full p-3 border rounded-lg mt-1 ${
-                    errors.type ? "border-red-500" : "border-gray-300"
-                  }`}
-                >
-                  <option value="">Selecione...</option>
-                  {userTypes.map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
               </label>
+              <select
+                name="type"
+                value={formData.type}
+                onChange={handleChange}
+                className={`w-full p-3 border rounded-lg mt-1 ${
+                  errors.type ? "border-red-500" : "border-gray-300"
+                }`}
+              >
+                <option value="">Selecione...</option>
+                {userTypes.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
               {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type}</p>}
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className={`w-full mt-6 py-3 px-4 border border-transparent rounded-lg shadow-sm text-white font-medium ${
-              isSubmitting ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
-            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
-          >
-            {isSubmitting ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Salvando...
-              </>
-            ) : "Salvar Alterações"}
-          </button>
+          <div className="flex gap-4 mt-6">
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard")}
+              className="flex-1 py-3 px-4 border border-gray-300 rounded-lg shadow-sm text-gray-700 font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className={`flex-1 py-3 px-4 border border-transparent rounded-lg shadow-sm text-white font-medium ${
+                isSubmitting ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
+              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+            >
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Salvando...
+                </>
+              ) : "Salvar Alterações"}
+            </button>
+          </div>
         </form>
       </div>
     </div>

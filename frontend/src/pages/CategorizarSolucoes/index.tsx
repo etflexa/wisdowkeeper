@@ -45,7 +45,7 @@ const CategorizarSolucoes = () => {
 
   const enterpriseData = JSON.parse(localStorage.getItem("enterprise") || "null");
   const enterpriseId = enterpriseData?._id;
-  const enterpriseName = enterpriseData?.name || "Empresa";
+  
 
   const fetchCategorias = async () => {
     try {
@@ -151,31 +151,15 @@ const CategorizarSolucoes = () => {
     }
   };
 
-  const excluirCategoria = async (id: string) => {
-    if (!window.confirm("Tem certeza que deseja excluir esta categoria?")) return;
-
-    try {
-      setIsLoading(true);
-      setError("");
-      
-      await api.delete(`/solutions/categories/${id}`);
-      
-      await fetchCategorias();
-      setSuccess("Categoria excluída com sucesso!");
-      setTimeout(() => setSuccess(""), 3000);
-    } catch (error: any) {
-      handleApiError(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   if (!enterpriseId) {
     return (
       <div className="min-h-screen flex bg-gray-100">
-        <Sidebar isSidebarOpen={isSidebarOpen} />
+        <Sidebar isSidebarOpen={isSidebarOpen} onCloseSidebar={function (): void {
+          throw new Error("Function not implemented.");
+        } } />
         <div className="flex-1 flex justify-center items-center">
           <div className="bg-white shadow-lg rounded-lg p-8 max-w-md text-center">
             <h2 className="text-xl font-semibold text-red-600 mb-4">
@@ -190,7 +174,9 @@ const CategorizarSolucoes = () => {
 
   return (
     <div className="min-h-screen flex bg-gray-100">
-      <Sidebar isSidebarOpen={isSidebarOpen} />
+      <Sidebar isSidebarOpen={isSidebarOpen} onCloseSidebar={function (): void {
+        throw new Error("Function not implemented.");
+      } } />
       <ContadorToken />
       <div className="flex-1 p-6 overflow-auto">
         <Header onToggleSidebar={toggleSidebar} showWelcome={true} />
@@ -248,7 +234,7 @@ const CategorizarSolucoes = () => {
                     <tr>
                       <th className="p-3 text-left">Nome</th>
                       <th className="p-3 text-left">Data de Criação</th>
-                      <th className="p-3 text-left">Ações</th>
+                      
                     </tr>
                   </thead>
                   <tbody>
@@ -285,20 +271,7 @@ const CategorizarSolucoes = () => {
                             </button>
                           ) : (
                             <>
-                              <button
-                                onClick={() => setEditandoCategoria({ id: cat._id, name: cat.name })}
-                                disabled={isLoading}
-                                className="p-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition mr-2 disabled:bg-yellow-300"
-                              >
-                                Editar
-                              </button>
-                              <button
-                                onClick={() => excluirCategoria(cat._id)}
-                                disabled={isLoading}
-                                className="p-2 bg-red-500 text-white rounded hover:bg-red-600 transition disabled:bg-red-300"
-                              >
-                                Excluir
-                              </button>
+                              
                             </>
                           )}
                         </td>

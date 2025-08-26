@@ -16,8 +16,12 @@ export async function listAllSolutionByEnterprise(data) {
   }
 
   const [solutions, total] = await Promise.all([
-    Solution.find({ enterpriseId }).skip(skip).limit(limit).lean(),
-    Solution.countDocuments({ enterpriseId }),
+    Solution.find({ enterpriseId })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Solution.countDocuments({ enterpriseId })
   ]);
 
   const totalPages = Math.ceil(total / limit);
@@ -27,7 +31,7 @@ export async function listAllSolutionByEnterprise(data) {
     pagination: {
       currentPage: page,
       totalPages,
-      totalItems: total,
-    },
-  };
+      totalItems: total
+    }
+  };
 }

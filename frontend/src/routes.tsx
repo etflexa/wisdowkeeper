@@ -8,6 +8,7 @@ import CadastroSolucao from './pages/CadastroSolucao/index';
 import EditarSolucao from './pages/EditarSolucao/index';
 import Solucoes from './pages/Soluções/index';
 import ConsultarSolucao from './pages/ConsultarSolucao/index';
+import ConsultarPerfil from './pages/ConsultarPerfil/index'
 import CategorizarSolucoes from "./pages/CategorizarSolucoes";
 import Login from './pages/Login/index';
 import RecuperacaoConta from './pages/recuperarConta/index';
@@ -26,6 +27,7 @@ function MainRoutes() {
       <Route path="/solucoes" element={<Solucoes />} />
       <Route path="/consultarsolucao/:id" element={<ConsultarSolucao />} />
       <Route path="/CadastrarSolucao" element={<CadastroSolucao />} />
+      <Route path="/ConsultarPerfil" element={<ConsultarPerfil />} />
       <Route path="/categorizarSolucoes" element={<CategorizarSolucoes />} />
       <Route path="/usuarios" element={<Usuarios />} />
       <Route path="/recuperarConta" element={<RecuperacaoConta />} />

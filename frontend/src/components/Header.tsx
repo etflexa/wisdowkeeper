@@ -37,8 +37,12 @@ const Header = ({ onToggleSidebar, showWelcome = false }: HeaderProps) => {
     navigate("/login");
   };
 
+  const myProfile = () => {
+    navigate("/consultarperfil")
+  }
+
   return (
-    <header className="flex items-center justify-between bg-white p-4 shadow-md w-full">
+    <header className="flex items-center justify-between bg-white p-4 shadow-md w-full mb-3">
       <button onClick={onToggleSidebar} className="lg:hidden text-2xl text-blue-600">
         <FaBars />
       </button>
@@ -64,7 +68,7 @@ const Header = ({ onToggleSidebar, showWelcome = false }: HeaderProps) => {
         {isDropdownOpen && (
           <div className="absolute right-0 mt-2 w-40 bg-white shadow-lg rounded-lg p-2">
             <ul>
-              <li className="text-blue-600 p-2 hover:bg-blue-50 rounded">Ver Perfil</li>
+              <li onClick={myProfile} className="text-blue-600 p-2 hover:bg-blue-50 rounded cursor-pointer">Ver Perfil</li>
               <li
                 className="text-red-600 p-2 hover:bg-red-50 rounded cursor-pointer"
                 onClick={handleLogout}

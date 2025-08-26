@@ -3,12 +3,12 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Sidebar from "../../components/Sidebar";
 import ContadorToken from "../../function/contadorToken";
-import UploadFiles from "./UploadFiles";
+import UploadFiles from "./UploadFiles.jsx"; // Certifique-se que o caminho está correto
 
 // Configuração global do Axios
 axios.defaults.baseURL = "http://localhost:8080";
 axios.interceptors.request.use(config => {
-  const token = localStorage.getItem("jwt");
+  const token = localStorage.getItem("jwt" );
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -21,28 +21,32 @@ interface Categoria {
   name: string;
 }
 
+interface UploadedFileData {
+  name: string;
+  url: string;
+  extention: string;
+}
+
 const CriacaoSolucao = () => {
   const navigate = useNavigate();
-  const [files, setFiles] = useState([]);
+  
+  // Estado para armazenar os dados dos arquivos do upload
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFileData[]>([]);
 
-  // Estados do formulário (sem os estados de arquivo)
+  // Estados do formulário
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [videoURL, setVideoURL] = useState("");
 
-  // Estados de controle
+  // Estados de controle e autenticação
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [isSidebarOpen] = useState(false);
-
-  // Estados para categorias
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [loadingCategorias, setLoadingCategorias] = useState(true);
-
-  // Estados para IDs de autenticação
   const [userId, setUserId] = useState<string | null>(null);
   const [enterpriseId, setEnterpriseId] = useState<string | null>(null);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [loadingCategorias, setLoadingCategorias] = useState(true);
 
   // Efeito para buscar dados de autenticação
   useEffect(() => {
@@ -88,13 +92,12 @@ const CriacaoSolucao = () => {
     fetchCategorias();
   }, [enterpriseId]);
 
-  // Função de submissão simplificada
+  // Função de submissão ajustada
   const handleSubmit = async () => {
     if (!title || !description || !category) {
       setError("Por favor, preencha todos os campos obrigatórios.");
       return;
     }
-
     if (!userId || !enterpriseId) {
       setError(
         "Não foi possível identificar o usuário ou empresa. Por favor, faça o login novamente."
@@ -106,14 +109,14 @@ const CriacaoSolucao = () => {
     setError("");
 
     try {
-      // Payload sem o campo 'files'
+      // Inclui os dados dos arquivos do estado no payload
       const solutionData = {
         enterpriseId,
         title,
         category,
         description,
         videoURL: videoURL || null,
-        files: files || [],
+        files: uploadedFiles, // Usa o estado que o componente filho atualiza
       };
 
       await axios.post(`/api/solutions/users/${userId}`, solutionData);
@@ -130,10 +133,11 @@ const CriacaoSolucao = () => {
     }
   };
 
-  // JSX simplificado, sem a seção de upload
   return (
     <div className='min-h-screen flex bg-gray-100'>
-      <Sidebar isSidebarOpen={isSidebarOpen} />
+      <Sidebar isSidebarOpen={isSidebarOpen} onCloseSidebar={function (): void {
+        throw new Error("Function not implemented.");
+      } } />
       <ContadorToken />
 
       <div className='flex-1 p-4 md:p-8 overflow-auto'>
@@ -149,7 +153,6 @@ const CriacaoSolucao = () => {
           )}
 
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-            {/* Coluna da Esquerda */}
             <div className='space-y-4'>
               <div>
                 <label className='block text-gray-700 mb-2 font-medium'>
@@ -171,12 +174,11 @@ const CriacaoSolucao = () => {
                   className='border border-gray-300 p-3 rounded-lg w-full'
                   placeholder='https://exemplo.com/video'
                   value={videoURL}
-                  onChange={e => setVideoURL(e.target.value)}
+                  onChange={e => setVideoURL(e.target.value )}
                 />
               </div>
             </div>
 
-            {/* Coluna da Direita */}
             <div className='space-y-4'>
               <div>
                 <label className='block text-gray-700 mb-2 font-medium'>
@@ -207,7 +209,6 @@ const CriacaoSolucao = () => {
             </div>
           </div>
 
-          {/* Campo de Descrição abaixo das colunas */}
           <div className='mt-6'>
             <label className='block text-gray-700 mb-2 font-medium'>
               Descrição*
@@ -220,9 +221,9 @@ const CriacaoSolucao = () => {
             />
           </div>
 
-          <UploadFiles authId={userId} files={files} setFiles={setFiles} />
+          {/* Passa o estado e a função de set para o componente filho */}
+          <UploadFiles authId={userId} files={uploadedFiles} setFiles={setUploadedFiles} />
 
-          {/* Botões de Ação */}
           <div className='mt-8 flex justify-end gap-4'>
             <button
               onClick={() => navigate("/solucoes")}
