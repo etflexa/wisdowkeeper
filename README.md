@@ -62,7 +62,6 @@ wisdowkeeper/
 
 👨‍💻 Autor
 Eduardo Teixeira
-
 Desenvolvido por Eduardo Flexa
-📎 LinkedIn: (adicione seu link aqui)
-📺 YouTube: (adicione seu canal aqui)
+📎 LinkedIn: https://www.linkedin.com/in/-eduardo-teixeira-/
+📺 YouTube: https://www.youtube.com/@teixeiraeduardo2310
